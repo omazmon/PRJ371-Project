@@ -16,3 +16,11 @@ CREATE TABLE CropHealthData (
     GPSLatitude DECIMAL(10, 6),
     GPSLongitude DECIMAL(10, 6),
 );
+CREATE TABLE PestControlData(
+    PestID INT PRIMARY KEY,
+    Datetime DATETIME,
+    Image VARCHAR(MAX),
+    Coordinates GEOGRAPHY,
+    TemperatureDetected FLOAT,
+    Object VARCHAR(255),
+);
