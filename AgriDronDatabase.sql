@@ -71,3 +71,63 @@ CREATE TABLE PestControlData(
     TemperatureDetected FLOAT,
     Object VARCHAR(255),
 );
+
+-- Field Table
+CREATE TABLE Field (
+    Field_ID INT PRIMARY KEY,
+    Field_Name VARCHAR(255),
+    Crop_Type VARCHAR(100),
+    GPS_Coordinates VARCHAR(50)
+);
+
+-- Flight Log Table
+CREATE TABLE FlightLog (
+    Flight_ID INT PRIMARY KEY,
+    Field_ID INT,
+    Flight_Date DATE,
+    Flight_Duration TIME,
+    Purpose VARCHAR(100),
+    FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID)
+);
+
+-- Image Table
+CREATE TABLE Image (
+    Image_ID INT PRIMARY KEY,
+    Flight_ID INT,
+    Image_File_Path VARCHAR(255),
+    Capture_Date DATE,
+    Sensor_Type VARCHAR(50),
+    FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
+);
+
+-- Orthomosaic Table
+CREATE TABLE Orthomosaic (
+    Orthomosaic_ID INT PRIMARY KEY,
+    Flight_ID INT,
+    Mosaic_File_Path VARCHAR(255),
+    Processing_Date DATE,
+    FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
+);
+
+
+-- Elevation Data Table
+CREATE TABLE ElevationData (
+    Elevation_ID INT PRIMARY KEY,
+    Field_ID INT,
+    Image_ID INT,
+    Elevation_Values TEXT, -- Store elevation data as needed
+    FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID),
+    FOREIGN KEY (Image_ID) REFERENCES Image(Image_ID)
+);
+
+
+
+-- User Table
+CREATE TABLE User (
+    User_ID INT PRIMARY KEY,
+    First_Name VARCHAR(50),
+    Last_Name VARCHAR(50),
+    Username VARCHAR(50),
+    Password VARCHAR(100),
+    Role VARCHAR(50)
+);
