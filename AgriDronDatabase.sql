@@ -1,8 +1,16 @@
 use master
-
-create database AgriDrone;
+Create database AgriDrone;
 go
 use AgriDrone;
+CREATE TABLE Farm(
+    FarmID INT PRIMARY KEY,
+    FarmName VARCHAR(100),
+    Location VARCHAR(200),
+    FarmSize FLOAT,
+    OwnerName VARCHAR(100),
+    ContactNumber VARCHAR(20)
+);
+GO
 -- Create the Crops table
 CREATE TABLE Crops (
     CropID INT PRIMARY KEY,
@@ -14,11 +22,10 @@ CREATE TABLE Crops (
     FOREIGN KEY (FarmID) REFERENCES Farm(FarmID)
 );
 GO
-
-GO
 CREATE TABLE CropHealthData (
     DataID INT PRIMARY KEY,
     CropID INT,
+	Field_ID INT,
     Timestamp DATETIME,
     NDVI FLOAT,
     Temperature FLOAT,
@@ -26,23 +33,13 @@ CREATE TABLE CropHealthData (
     PestStatus VARCHAR(50),
     DiseaseStatus VARCHAR(50),
     IrrigationStatus VARCHAR(50),
-    GPSLatitude DECIMAL(10, 6),
-    GPSLongitude DECIMAL(10, 6),
+    Field_Name VARCHAR(255),
+    Crop_Type VARCHAR(100),
+    GPS_Coordinates VARCHAR(50),
 	LastUpdate DATETIME
 	FOREIGN KEY (CropID) REFERENCES Crops(CropID),
 );
 GO
--- Create the Farm table
-CREATE TABLE Farm (
-    FarmID INT PRIMARY KEY,
-    FarmName VARCHAR(100),
-    Location VARCHAR(200),
-    FarmSize FLOAT,
-    OwnerName VARCHAR(100),
-    ContactNumber VARCHAR(20)
-);
-GO
-
 -- Create the Soil table
 CREATE TABLE Soil (
     SoilID INT PRIMARY KEY,
@@ -59,10 +56,15 @@ CREATE TABLE Technicians (
     TechnicianID INT PRIMARY KEY,
     TechnicianName VARCHAR(100),
     ContactNumber VARCHAR(20),
-    Specialization VARCHAR(100),
-    Certification VARCHAR(100)
 );
 GO
+CREATE TABLE IrrigationSchedule (
+    ScheduleID INT PRIMARY KEY,
+    FieldID INT, -- Foreign key to link to Fields table
+    CropID INT, -- Foreign key to link to Crops table
+    Date DATE NOT NULL,
+    AmountToIrrigate DECIMAL(5, 2) NOT NULL,
+);
 CREATE TABLE PestControlData(
     PestID INT PRIMARY KEY,
     Datetime DATETIME,
@@ -72,14 +74,6 @@ CREATE TABLE PestControlData(
     Object VARCHAR(255),
 );
 
--- Field Table
-CREATE TABLE Field (
-    Field_ID INT PRIMARY KEY,
-    Field_Name VARCHAR(255),
-    Crop_Type VARCHAR(100),
-    GPS_Coordinates VARCHAR(50)
-);
-
 -- Flight Log Table
 CREATE TABLE FlightLog (
     Flight_ID INT PRIMARY KEY,
@@ -87,7 +81,7 @@ CREATE TABLE FlightLog (
     Flight_Date DATE,
     Flight_Duration TIME,
     Purpose VARCHAR(100),
-    FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID)
+    FOREIGN KEY (Field_ID) REFERENCES CropHealth(Field_ID)
 );
 
 -- Image Table
@@ -97,10 +91,11 @@ CREATE TABLE Image (
     Image_File_Path VARCHAR(255),
     Capture_Date DATE,
     Sensor_Type VARCHAR(50),
+	Datetime DATETIME,
     FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
 );
 
--- Orthomosaic Table
+-- Orthomosaic Table maybe change the name of the table to heat map table
 CREATE TABLE Orthomosaic (
     Orthomosaic_ID INT PRIMARY KEY,
     Flight_ID INT,
@@ -118,12 +113,12 @@ CREATE TABLE ElevationData (
     Elevation_Values TEXT, -- Store elevation data as needed
     FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID),
     FOREIGN KEY (Image_ID) REFERENCES Image(Image_ID)
-);
+);--Dont think this table is neccessary remember the drone already has the built-in function 
 
 
 
 -- User Table
-CREATE TABLE User (
+CREATE TABLE Users(
     User_ID INT PRIMARY KEY,
     First_Name VARCHAR(50),
     Last_Name VARCHAR(50),
