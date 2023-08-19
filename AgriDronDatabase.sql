@@ -102,8 +102,9 @@ CREATE TABLE Orthomosaic (
     Mosaic_File_Path VARCHAR(255),
     Processing_Date DATE,
     FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
-);
-
+); --remember i did aeriel surveying and mapping, this table is about the images collected to make a bigger image.
+  --meaning the images taken by the dron would be relatively small, this combines those images to make a bigger picture.
+--e.g surveying one large area.
 
 -- Elevation Data Table
 CREATE TABLE ElevationData (
@@ -114,6 +115,7 @@ CREATE TABLE ElevationData (
     FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID),
     FOREIGN KEY (Image_ID) REFERENCES Image(Image_ID)
 );--Dont think this table is neccessary remember the drone already has the built-in function 
+-- This is about ground elevation not drone elevation hence the field ID and image ID. unless we're assuming that the farm is on leveled ground?
 
 
 
