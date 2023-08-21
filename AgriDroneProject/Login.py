@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import messagebox
-
 # Define valid credentials for the technician and farmer
 valid_credentials = {
     "technician": {"username": "admin", "password": "1234"},
@@ -23,7 +22,7 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
-def show_user_form(user_role):
+def show_user_form(user_role, login_frame=None):
     login_frame.destroy()  # Destroy the login form
 
     # Create and display the user-specific form
