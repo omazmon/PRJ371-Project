@@ -1,7 +1,5 @@
 import cv2
 import tellopy
-
-
 # Function to handle Tello sensor data
 def handle_tello_data(event, sender, data):
     if event is tellopy.EVENT_LOG_DATA:

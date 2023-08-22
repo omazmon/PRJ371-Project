@@ -1,7 +1,5 @@
 import threading
 from datetime import datetime
-
-import cap
 import cv2
 import tellopy
 import numpy as np
@@ -9,12 +7,14 @@ import random
 import time
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk  # Add PIL imports for image display
 from matplotlib import pyplot as plt
 
 # Global variables
 is_recording = False
 video_writer = None
 irrigation_threshold = 0.4
+cap = cv2.VideoCapture(0)  # Initialize the camera capture
 
 # Create the main application window
 root = tk.Tk()
@@ -23,7 +23,8 @@ root.title("AgriDrone Control")
 # Create a label for status messages
 status_label = ttk.Label(root, text="")
 status_label.pack()
-# Function to start or stop video recording
+
+# Function to start or stop video recording and display it
 def toggle_record():
     global is_recording, video_writer
     if is_recording:
@@ -37,11 +38,21 @@ def toggle_record():
         video_filename = f"video_{timestamp}.avi"
         video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
         record_button.config(text="Stop Recording")
+
+        # Display the recorded video
+        cap = cv2.VideoCapture(video_filename)
+        ret, frame = cap.read()
+        if ret:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert to RGB format
+            photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+            video_label.config(image=photo)
+            video_label.image = photo  # To prevent garbage collection
+
 # Create a button for recording control
 record_button = ttk.Button(root, text="Start Recording", command=toggle_record)
 record_button.pack()
 
-# Function to capture an image
+# Function to capture an image and display it
 def capture_image():
     ret, frame = cap.read()
     if ret:
@@ -51,9 +62,24 @@ def capture_image():
         cv2.imwrite(image_filename, frame)
         status_label.config(text=f"Image saved as {image_filename}")
 
+        # Display the captured image
+        image = Image.open(image_filename)
+        image.thumbnail((320, 240))  # Resize the image if needed
+        photo = ImageTk.PhotoImage(image=image)
+        image_label.config(image=photo)
+        image_label.image = photo  # To prevent garbage collection
+
 # Create a button for capturing images
 capture_button = ttk.Button(root, text="Capture Image", command=capture_image)
 capture_button.pack()
+
+# Create a label for displaying images
+image_label = ttk.Label(root)
+image_label.pack()
+
+# Create a label for displaying videos
+video_label = ttk.Label(root)
+video_label.pack()
 
 # Function to display a temperature heat map
 def display_temperature_heatmap(temperature_data):
