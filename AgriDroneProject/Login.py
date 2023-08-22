@@ -1,32 +1,50 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
-import pyodbc
+from tkinter import messagebox
 
 # Define valid credentials for the technician and farmer
 valid_credentials = {
     "technician": {"username": "admin", "password": "1234"},
     "farmer": {"username": "farmer", "password": "password123"}
 }
-def login():
-    username = entry_username.get()
-    password = entry_password.get()
+# Track incorrect login attempts
+incorrect_attempts = 0
 
-    # Check if the entered credentials are valid
+# Function to validate credentials
+def validate_credentials(username, password):
     user_role = None
     for role, credentials in valid_credentials.items():
         if username == credentials["username"] and password == credentials["password"]:
             user_role = role
             break
+    return user_role
+
+# Function to handle login button click
+def login():
+    global incorrect_attempts
+    username = entry_username.get()
+    password = entry_password.get()
+
+    user_role = validate_credentials(username, password)
 
     if user_role:
-        show_user_form(user_role)
+        messagebox.showinfo("Success", "Login successful!")
+        root.withdraw()  # Hide the login window
+        if user_role == "technician":
+            # Open the technician's form
+            show_user_form(user_role)
+        elif user_role == "farmer":
+            # Open the farmer's form
+            show_user_form(user_role)
     else:
-        messagebox.showerror("Error", "Invalid credentials. Please try again.")
+        incorrect_attempts += 1
+        if incorrect_attempts >= 3:
+            messagebox.showerror("Error", "Too many incorrect login attempts. The application will now close.")
+            root.destroy()  # Close the application
+        else:
+            messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
-def show_user_form(user_role, login_frame=None):
-    if login_frame:
-        login_frame.destroy()  # Destroy the login form
-
+# Function to create user-specific form
+def show_user_form(user_role):
     # Create and display the user-specific form
     user_form = tk.Toplevel()
     user_form.title(f"{user_role.capitalize()} Form")
@@ -36,82 +54,15 @@ def show_user_form(user_role, login_frame=None):
     elif user_role == "technician":
         create_technician_form(user_form)
 
+# Function to create farmer-specific form
 def create_farmer_form(form):
     # Add farmer-specific widgets here
+    pass
 
-    # Example: Label and entry for crop name
-    label_crop_name = tk.Label(form, text="Crop Name:")
-    label_crop_name.pack()
-    entry_crop_name = tk.Entry(form)
-    entry_crop_name.pack()
-
-    def save_farmer_data():
-        # Retrieve data from the input fields
-        farmer_name = entry_name.get()
-        farmer_location = combo_province.get()  # Get the selected province
-        farmer_contact = entry_contact.get()
-
-        try:
-            # Connect to the SQL Server database
-            connection = pyodbc.connect(
-                'Driver={SQL Server};Server=your_server_name;Database=your_database_name;Trusted_Connection=yes;')
-
-            # Create a cursor
-            cursor = connection.cursor()
-
-            # Define the SQL query to insert the data into the Farmers table
-            query = "INSERT INTO farm(Name, Location, Contact) VALUES (?, ?, ?)"
-            cursor.execute(query, (farmer_name, farmer_location, farmer_contact))
-
-            # Commit the transaction
-            connection.commit()
-
-            # Close the database connection
-            connection.close()
-
-            # Show a confirmation message
-            messagebox.showinfo("Success", "Farmer data saved successfully!")
-
-        except Exception as e:
-            # Handle any database-related errors
-            messagebox.showerror("Error", f"Error saving data: {str(e)}")
-
-    label_name = tk.Label(form, text="Farmer Name:")
-    label_name.pack()
-
-    entry_name = tk.Entry(form)
-    entry_name.pack()
-
-    label_Location = tk.Label(form, text="Location:")
-    label_Location.pack()
-
-    # List of South African provinces
-    provinces = ["Please choose a region", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
-                 "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
-
-    # Create a Combobox for selecting a province
-    combo_province = ttk.Combobox(form, values=provinces)
-    combo_province.set("Please choose a region")  # Set the default value
-    combo_province.pack()
-
-    label_contact = tk.Label(form, text="Contact Number:")
-    label_contact.pack()
-
-    entry_contact = tk.Entry(form)
-    entry_contact.pack()
-
-    # Create a button to save the data
-    save_button = tk.Button(form, text="Save Farmer Data", command=save_farmer_data)
-    save_button.pack()
-
+# Function to create technician-specific form
 def create_technician_form(form):
     # Add technician-specific widgets here
-
-    # Example: Label and entry for equipment ID
-    label_equipment_id = tk.Label(form, text="Equipment ID:")
-    label_equipment_id.pack()
-    entry_equipment_id = tk.Entry(form)
-    entry_equipment_id.pack()
+    pass
 
 # Create the main application window
 root = tk.Tk()

@@ -1,35 +1,47 @@
 import pyodbc
+import hashlib
+import base64
 
-# Define the connection string
-server = 'Mthokozisi-2\SQLEXPRESS'  # Replace with your SQL Server hostname or IP address
-database = 'AgriDrone'
-username = 'Mthokozisi-2\mthog'  # Replace with your SQL Server username
-password = ''  # Replace with your SQL Server password
+def hash_password(password):
+    # Salt the password (e.g., by appending "123" to it)
+    salted_password = (password + "123").encode('utf-8')
 
-# Create a connection string
-conn_str = f"DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}"
+    # Compute the SHA-256 hash
+    sha256 = hashlib.sha256()
+    sha256.update(salted_password)
+    hash_bytes = sha256.digest()
 
-try:
-    # Establish the database connection
-    conn = pyodbc.connect(conn_str)
+    # Convert the hash to a base64-encoded string
+    hash_base64 = base64.b64encode(hash_bytes).decode('utf-8')
 
-    # Create a cursor for database operations
-    cursor = conn.cursor()
+    return hash_base64
+def validate_credentials(username, password):
+    flag = False
+    try:
+        # Establish a connection to your SQL Server database
+        conn_str = (
+            r'DRIVER={SQL Server Native Client 11.0};'
+            r'SERVER=Mthokozisi-2\SQLEXPRESS;'
+            r'DATABASE=AgriDrone;'
+            r'Trusted_Connection=yes;'
+        )
+        conn = pyodbc.connect(conn_str)
 
-    # Now you can perform SQL operations using the 'cursor'
+        # Hash the provided password (you should implement HashPassword function)
+        hashed_password = hash_password(password)
 
-    # For example, you can execute a query
-    cursor.execute("SELECT * FROM your_table")
+        # Prepare and execute the SQL query to retrieve user information
+        cursor = conn.cursor()
+        query = f"SELECT * FROM farmer WHERE Username = '{username}' AND Password = '{hashed_password}';"
+        cursor.execute(query)
 
-    # Fetch the results
-    rows = cursor.fetchall()
-    for row in rows:
-        print(row)
+    except Exception as ex:
+        print(str(ex))
+    finally:
+        # Close the database connection
+        if conn:
+            conn.close()
 
-    # Don't forget to close the cursor and connection when done
-    cursor.close()
-    conn.close()
+    return flag
 
-except Exception as e:
-    print("An error occurred:", e)
 
