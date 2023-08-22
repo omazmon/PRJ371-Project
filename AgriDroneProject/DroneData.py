@@ -1,17 +1,28 @@
 import threading
+from datetime import datetime
+
+import cap
+import cv2
+import tellopy
+import numpy as np
+import random
+import time
 import tkinter as tk
 from tkinter import ttk
-import cv2
-import djitellopy
-import serial
-from DroneBlocksTelloSimulator import tello
-from PIL import Image, ImageTk
-from datetime import datetime, time
+from matplotlib import pyplot as plt
 
 # Global variables
 is_recording = False
 video_writer = None
+irrigation_threshold = 0.4
 
+# Create the main application window
+root = tk.Tk()
+root.title("AgriDrone Control")
+
+# Create a label for status messages
+status_label = ttk.Label(root, text="")
+status_label.pack()
 # Function to start or stop video recording
 def toggle_record():
     global is_recording, video_writer
@@ -26,6 +37,9 @@ def toggle_record():
         video_filename = f"video_{timestamp}.avi"
         video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
         record_button.config(text="Stop Recording")
+# Create a button for recording control
+record_button = ttk.Button(root, text="Start Recording", command=toggle_record)
+record_button.pack()
 
 # Function to capture an image
 def capture_image():
@@ -37,157 +51,104 @@ def capture_image():
         cv2.imwrite(image_filename, frame)
         status_label.config(text=f"Image saved as {image_filename}")
 
-# Create the main application window
-root = tk.Tk()
-root.title("Image and Video Capture")
-
-# Create a VideoCapture object
-cap = cv2.VideoCapture(0)
-
-# Create a label for displaying the video feed
-video_label = ttk.Label(root)
-video_label.pack()
-
-# Create buttons for image capture and video recording
+# Create a button for capturing images
 capture_button = ttk.Button(root, text="Capture Image", command=capture_image)
 capture_button.pack()
 
-record_button = ttk.Button(root, text="Start Recording", command=toggle_record)
-record_button.pack()
+# Function to display a temperature heat map
+def display_temperature_heatmap(temperature_data):
+    # Normalize temperature data to [0, 255] for display
+    normalized_data = cv2.normalize(temperature_data, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
 
-# Create a label for status messages
-status_label = ttk.Label(root, text="")
-status_label.pack()
+    # Apply a colormap (e.g., 'jet') for visualization
+    heatmap = cv2.applyColorMap(normalized_data, cv2.COLORMAP_JET)
 
-# Function to update the video feed
-def update_video():
-    ret, frame = cap.read()
-    if ret:
-        if is_recording:
-            video_writer.write(frame)
+    # Display the heat map
+    plt.imshow(heatmap)
+    plt.colorbar()
+    plt.title("Temperature Heat Map")
+    plt.show()
 
-        # Display the video feed in the label
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(image=img)
-        video_label.img = img
-        video_label.config(image=img)
+# Simulated soil moisture data (replace with real data)
+def get_soil_moisture():
+    return random.uniform(0, 1)  # Replace with actual sensor data
 
-        # Schedule the update function to run periodically
-        root.after(10, update_video)
+# Simulated irrigation scheduling loop
+def perform_irrigation_scheduling():
+    while True:
+        current_soil_moisture = get_soil_moisture()
+        print(f"Current Soil Moisture: {current_soil_moisture}")
 
-# Start the video update loop
-update_video()
+        if current_soil_moisture < irrigation_threshold:
+            # Trigger irrigation
+            print("Starting irrigation...")
+            # Add code here to control your irrigation system
 
+        # Wait for a specific interval (e.g., 1 hour) before checking again
+        time.sleep(3600)
 
+# Function to calculate NDVI (Normalized Difference Vegetation Index)
+def calculate_ndvi(image):
+    # Extract the red and near-infrared (NIR) channels
+    red_channel = image[:, :, 2]
+    nir_channel = image[:, :, 3]
 
-# Function to process each frame
+    # Calculate NDVI
+    ndvi = (nir_channel - red_channel) / (nir_channel + red_channel)
+
+    return ndvi
+
+# Function to identify pests or diseases (placeholder for more advanced methods)
+def identify_pests_or_diseases(image):
+    # Add your pest or disease detection logic here
+    # This can involve image processing techniques, machine learning, or deep learning models
+
+    # For demonstration, let's assume no pests or diseases
+    return np.zeros_like(image[:, :, 0])
+
+# Function to process frames from the Tello camera
 def process_frame(frame):
-    # Convert the frame to grayscale for simpler processing
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # Calculate NDVI
+    ndvi_result = calculate_ndvi(frame)
 
-    # Apply image processing techniques to identify crop issues
-    # You can use any image processing or computer vision techniques here
+    # Identify pests or diseases
+    pests_or_diseases_result = identify_pests_or_diseases(frame)
 
-    # Example: Detect edges using Canny edge detection
-    edges = cv2.Canny(gray, 50, 150)
+    # Display the video frame, NDVI, and pests/diseases detection (adjust windows as needed)
+    cv2.imshow("Original Image", frame)
+    cv2.imshow("NDVI", (ndvi_result * 255).astype(np.uint8))  # Scale NDVI to 8-bit for display
+    cv2.imshow("Pests or Diseases", (pests_or_diseases_result * 255).astype(np.uint8))  # Convert to 8-bit for display
 
-    # Example: Find contours in the image
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.waitKey(1)  # Adjust the waitKey value as needed to control frame display rate
 
-    # Example: Draw bounding boxes around detected issues
-    for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)  # Red rectangle
+# Create a Tello object
+drone = tellopy.Tello()
 
-    return frame
-
-# Initialize Tello
-drone = djitellopy.Tello()
-drone.connect()
-drone.wait_for_connection()
-
-# Create a VideoCapture object to receive video from the drone
-cap = cv2.VideoCapture('udp://@0.0.0.0:11111')  # Tello video stream
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    # Process the frame to identify crop issues
-    processed_frame = process_frame(frame)
-
-    # Display the processed frame
-    cv2.imshow('Crop Issues Detection', processed_frame)
-
-    # Press 'q' to exit
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-# Initialize temperature sensor
-ser = serial.Serial('/dev/ttyUSB0', 9600)  # Replace with your sensor details
-
-# Define temperature thresholds for decision-making
-TEMP_THRESHOLD_HOT = 30.0  # Adjust as needed
-TEMP_THRESHOLD_COLD = 10.0  # Adjust as needed
-
-# Function to read temperature from the sensor
-def read_temperature():
-    while True:
-        temperature_data = ser.readline().decode('utf-8').strip()
-        temperature = float(temperature_data)
-        print(f"Temperature: {temperature}°C")
-        time.sleep(5)  # Adjust the interval as needed
-
-# Start a separate thread to read temperature data
-temperature_thread = threading.Thread(target=read_temperature)
-temperature_thread.daemon = True
-temperature_thread.start()
-
-# Function to control the drone based on temperature
-def control_drone():
-    while True:
-        temperature = float(ser.readline().decode('utf-8').strip())
-
-        if temperature > TEMP_THRESHOLD_HOT:
-            print("It's too hot. Initiating irrigation or other actions.")
-            # Add code to trigger irrigation or other actions here
-
-        elif temperature < TEMP_THRESHOLD_COLD:
-            print("It's too cold. Consider heating or delaying planting.")
-            # Add code for heating or planting delay actions here
-
-        time.sleep(600)  # Adjust the interval as needed
-
-# Start a separate thread to control the drone based on temperature
-drone_control_thread = threading.Thread(target=control_drone)
-drone_control_thread.daemon = True
-drone_control_thread.start()
-
-# Main loop for drone control (takeoff, hover, and land)
 try:
-    tello.takeoff()
-    time.sleep(5)  # Adjust as needed
-    tello.move_up(50)  # Adjust as needed
+    # Connect to the Tello drone
+    drone.connect()
 
-    # Add more drone movements as needed
+    # Start receiving video stream
+    drone.start_video()
 
-    tello.land()
-except KeyboardInterrupt:
-    print("Keyboard Interrupt. Landing the drone.")
-    tello.land()
+    # Start the irrigation scheduling thread
+    irrigation_thread = threading.Thread(target=perform_irrigation_scheduling)
+    irrigation_thread.daemon = True
+    irrigation_thread.start()
 
-# Release resources
+    # Enter the main loop
+    while True:
+        # Capture video frame from the Tello (replace this with your image processing logic)
+        frame = drone.get_frame_read().frame
 
-# Run the Tkinter main loop
+        # Process the frame
+        process_frame(frame)
 
+except Exception as e:
+    print(f"Error: {str(e)}")
+finally:
+    drone.quit()
+    cv2.destroyAllWindows()
 
-# Release resources when the Tkinter main loop exits
-cap.release()
-if video_writer:
-    video_writer.release()
-# Release resources
-
-# Run the Tkinter main loop
-root.mainloop()
-cv2.destroyAllWindows()
-drone.quit()
+if __name__ == "__main__":
+    root.mainloop()
