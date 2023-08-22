@@ -28,7 +28,7 @@ def identify_pests_or_diseases(image):
     return pests_detected
 
 # Load an example crop image (replace with your image file)
-image_path = 'path_to_crop_image.jpg'
+image_path = '  .jpg'
 crop_image = cv2.imread(image_path)
 
 # Calculate NDVI
