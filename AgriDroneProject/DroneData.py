@@ -1,9 +1,84 @@
 import threading
-from datetime import time
+import tkinter as tk
+from tkinter import ttk
 import cv2
 import djitellopy
 import serial
-from djitellopy import tello
+from DroneBlocksTelloSimulator import tello
+from PIL import Image, ImageTk
+from datetime import datetime, time
+
+# Global variables
+is_recording = False
+video_writer = None
+
+# Function to start or stop video recording
+def toggle_record():
+    global is_recording, video_writer
+    if is_recording:
+        is_recording = False
+        video_writer.release()
+        record_button.config(text="Start Recording")
+    else:
+        is_recording = True
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d%H%M%S")
+        video_filename = f"video_{timestamp}.avi"
+        video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
+        record_button.config(text="Stop Recording")
+
+# Function to capture an image
+def capture_image():
+    ret, frame = cap.read()
+    if ret:
+        now = datetime.now()
+        timestamp = now.strftime("%Y%m%d%H%M%S")
+        image_filename = f"image_{timestamp}.jpg"
+        cv2.imwrite(image_filename, frame)
+        status_label.config(text=f"Image saved as {image_filename}")
+
+# Create the main application window
+root = tk.Tk()
+root.title("Image and Video Capture")
+
+# Create a VideoCapture object
+cap = cv2.VideoCapture(0)
+
+# Create a label for displaying the video feed
+video_label = ttk.Label(root)
+video_label.pack()
+
+# Create buttons for image capture and video recording
+capture_button = ttk.Button(root, text="Capture Image", command=capture_image)
+capture_button.pack()
+
+record_button = ttk.Button(root, text="Start Recording", command=toggle_record)
+record_button.pack()
+
+# Create a label for status messages
+status_label = ttk.Label(root, text="")
+status_label.pack()
+
+# Function to update the video feed
+def update_video():
+    ret, frame = cap.read()
+    if ret:
+        if is_recording:
+            video_writer.write(frame)
+
+        # Display the video feed in the label
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
+        img = ImageTk.PhotoImage(image=img)
+        video_label.img = img
+        video_label.config(image=img)
+
+        # Schedule the update function to run periodically
+        root.after(10, update_video)
+
+# Start the video update loop
+update_video()
+
 
 
 # Function to process each frame
@@ -102,6 +177,17 @@ except KeyboardInterrupt:
     tello.land()
 
 # Release resources
+
+# Run the Tkinter main loop
+
+
+# Release resources when the Tkinter main loop exits
 cap.release()
+if video_writer:
+    video_writer.release()
+# Release resources
+
+# Run the Tkinter main loop
+root.mainloop()
 cv2.destroyAllWindows()
 drone.quit()
