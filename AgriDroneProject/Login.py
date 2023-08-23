@@ -1,5 +1,34 @@
+import subprocess
 import tkinter as tk
+from PIL import Image, ImageTk
 from tkinter import messagebox
+
+# Create the main application window
+root = tk.Tk()
+root.title("Login Form")
+# Set the window size to fullscreen
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+# Set the background image
+background_image = Image.open("background-image.jpg")  # Replace with your background image file
+background_photo = ImageTk.PhotoImage(background_image)
+background_label = tk.Label(root, image=background_photo)
+background_label.place(relwidth=1, relheight=1)
+
+# Create a label for instructions
+login_instructions = tk.Label(
+    root,
+    text="Please login using your AgriDrone credentials",
+    font=("Times New Roman", 16, "bold"),
+    bg="white",  # Set the background color of the label
+)
+login_instructions.pack(pady=20)  # Add some padding
+
+# Function to open the application.py
+def open_application():
+    # Close the login form (root window)
+    root.destroy()
+    # Open the application.py using subprocess
+    subprocess.Popen(["python", "Application.py"])  # Replace "python" with your Python executable if needed
 
 # Define valid credentials for the technician and farmer
 valid_credentials = {
@@ -15,6 +44,7 @@ def validate_credentials(username, password):
     for role, credentials in valid_credentials.items():
         if username == credentials["username"] and password == credentials["password"]:
             user_role = role
+
             break
     return user_role
 
@@ -31,10 +61,10 @@ def login():
         root.withdraw()  # Hide the login window
         if user_role == "technician":
             # Open the technician's form
-            show_user_form(user_role)
+            open_application()
         elif user_role == "farmer":
             # Open the farmer's form
-            show_user_form(user_role)
+            open_application()
     else:
         incorrect_attempts += 1
         if incorrect_attempts >= 3:
@@ -42,31 +72,6 @@ def login():
             root.destroy()  # Close the application
         else:
             messagebox.showerror("Error", "Invalid credentials. Please try again.")
-
-# Function to create user-specific form
-def show_user_form(user_role):
-    # Create and display the user-specific form
-    user_form = tk.Toplevel()
-    user_form.title(f"{user_role.capitalize()} Form")
-
-    if user_role == "farmer":
-        create_farmer_form(user_form)
-    elif user_role == "technician":
-        create_technician_form(user_form)
-
-# Function to create farmer-specific form
-def create_farmer_form(form):
-    # Add farmer-specific widgets here
-    pass
-
-# Function to create technician-specific form
-def create_technician_form(form):
-    # Add technician-specific widgets here
-    pass
-
-# Create the main application window
-root = tk.Tk()
-root.title("Login Form")
 
 # Create and place labels and entry widgets for username and password
 label_username = tk.Label(root, text="Username:")
