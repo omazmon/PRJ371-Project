@@ -1,67 +1,56 @@
 import cv2
-import tellopy
+import tkinter as tk
+from DroneBlocksTelloSimulator import drone
+
 # Function to handle Tello sensor data
 def handle_tello_data(event, sender, data):
-    if event is tellopy.EVENT_LOG_DATA:
-        # Parse the log data to extract sensor information
-        log_data = data.decode('utf-8')
-        sensor_data = parse_sensor_data(log_data)
-        if sensor_data:
-            handle_sensor_data(sensor_data)
+    if event == "data":
+        # Parse the log data to extract sensor information (not available in the simulator)
+        pass
 
-# Function to parse Tello sensor data
-def parse_sensor_data(log_data):
-    sensor_data = {}
-    lines = log_data.splitlines()
-    for line in lines:
-        if line.startswith('TempHeight'):
-            parts = line.split(':')
-            if len(parts) == 2:
-                try:
-                    temperature = float(parts[1])
-                    sensor_data['temperature'] = temperature
-                except ValueError:
-                    pass  # Handle parsing errors here
-    return sensor_data
-
-# Function to handle sensor data (replace with your desired logic)
-def handle_sensor_data(sensor_data):
-    if 'temperature' in sensor_data:
-        temperature = sensor_data['temperature']
-        print(f"Temperature: {temperature}°C")
-
-# Create a Tello object
-drone = tellopy.Tello()
+# Create a Tello Simulator object
+simulator = drone
 
 try:
-    # Connect to the Tello drone
-    drone.connect()
-
-    # Listen for Tello log data events (including sensor data)
-    drone.subscribe(tellopy.EVENT_LOG_DATA, handle_tello_data)
+    # Connect to the Tello Simulator
+    simulator.connect()
 
     # Start receiving video stream (you can capture frames here)
-    drone.start_video()
+    simulator.start_video()
 
-    # Enter the main loop
-    while True:
-        # Capture video frame from the Tello (replace this with your image processing logic)
-        frame = drone.get_frame_read().frame
+    # Create a Tkinter window
+    root = tk.Tk()
+    root.title("AgriDrone Report")
+
+    # Create a label for the analysis
+    analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
+    analysis_label.pack()
+
+    # Create a panel for the "Report from AgriDrone"
+    report_panel = tk.LabelFrame(root, text="Report from AgriDrone", font=("Times New Roman", 16))
+    report_panel.pack(padx=10, pady=10)
+
+    # Create a label to display the video/image (replace with your logic)
+    video_label = tk.Label(report_panel, text="Video/Image Placeholder", font=("Times New Roman", 12))
+    video_label.pack()
+
+    # Function to update the video frame
+    def update_video_frame():
+        # Capture video frame from the Tello Simulator (replace this with your image processing logic)
+        frame = simulator.read_video_frame()
 
         # Process the frame (e.g., display it)
         cv2.imshow("Tello Video", frame)
 
-        # Handle key press events (e.g., exit on 'q')
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
+        # Call this function again after a delay (e.g., 100 milliseconds)
+        root.after(100, update_video_frame)
+
+    # Start updating the video frame
+    update_video_frame()
+
+    # Start the GUI main loop
+    root.mainloop()
 
 except Exception as e:
     print(f"Error: {str(e)}")
-
-finally:
-    # Release resources
-    drone.stop_video()
-    drone.quit()
-    cv2.destroyAllWindows()
 

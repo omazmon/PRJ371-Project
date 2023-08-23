@@ -24,12 +24,14 @@ login_instructions = tk.Label(
 login_instructions.pack(pady=20)  # Add some padding
 
 # Function to open the application.py
+def open_application1():
+    # Close the login form (root window)
+    root.destroy()
+    subprocess.Popen(["python", "Application.py"])
 def open_application():
     # Close the login form (root window)
     root.destroy()
-    # Open the application.py using subprocess
-    subprocess.Popen(["python", "Application.py"])  # Replace "python" with your Python executable if needed
-
+    subprocess.Popen(["python", "Crops.py"])
 # Define valid credentials for the technician and farmer
 valid_credentials = {
     "technician": {"username": "admin", "password": "1234"},
@@ -44,7 +46,6 @@ def validate_credentials(username, password):
     for role, credentials in valid_credentials.items():
         if username == credentials["username"] and password == credentials["password"]:
             user_role = role
-
             break
     return user_role
 
@@ -61,10 +62,10 @@ def login():
         root.withdraw()  # Hide the login window
         if user_role == "technician":
             # Open the technician's form
-            open_application()
+            open_application1()
         elif user_role == "farmer":
             # Open the farmer's form
-            open_application()
+            open_application1()
     else:
         incorrect_attempts += 1
         if incorrect_attempts >= 3:
