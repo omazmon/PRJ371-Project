@@ -1,93 +1,68 @@
 import subprocess
 import tkinter as tk
-from PIL import Image, ImageTk
 from tkinter import messagebox
+from PIL import Image, ImageTk
 
 # Create the main application window
 root = tk.Tk()
-root.title("Login Form")
-# Set the window size to fullscreen
+root.title("AgriDrone Login")
+
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-# Set the background image
-background_image = Image.open("background-image.jpg")  # Replace with your background image file
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
+image = Image.open("background-image.jpg")  # Replace with your image file path
+image = image.resize((root.winfo_screenwidth(), root.winfo_screenheight()))
+background_image = ImageTk.PhotoImage(image)
+# Create a frame for the login form
+login_frame = tk.Frame(root, bg="white", bd=5)
+login_frame.place(relx=0.5, rely=0.5, relwidth=0.75, relheight=0.6, anchor="center")
 
 # Create a label for instructions
 login_instructions = tk.Label(
-    root,
+    login_frame,
     text="Please login using your AgriDrone credentials",
-    font=("Times New Roman", 16, "bold"),
-    bg="white",  # Set the background color of the label
+    font=("Arial", 14, "bold"),
+    bg="white",
 )
-login_instructions.pack(pady=20)  # Add some padding
+login_instructions.pack(pady=10)
 
-# Function to open the application.py
-def open_application1():
-    # Close the login form (root window)
+# Create and place labels and entry widgets for username and password
+label_username = tk.Label(login_frame, text="Username:", font=("Arial", 12), bg="white")
+label_username.pack(pady=5)
+entry_username = tk.Entry(login_frame, font=("Arial", 12))
+entry_username.pack()
+
+label_password = tk.Label(login_frame, text="Password:", font=("Arial", 12), bg="white")
+label_password.pack(pady=5)
+entry_password = tk.Entry(login_frame, show="*", font=("Arial", 12))
+entry_password.pack()
+
+# Function to open the Application.py
+def open_application():
     root.destroy()
     subprocess.Popen(["python", "Application.py"])
-def open_application():
-    # Close the login form (root window)
-    root.destroy()
-    subprocess.Popen(["python", "Crops.py"])
-# Define valid credentials for the technician and farmer
-valid_credentials = {
-    "technician": {"username": "admin", "password": "1234"},
-    "farmer": {"username": "farmer", "password": "password123"}
-}
-# Track incorrect login attempts
-incorrect_attempts = 0
-
-# Function to validate credentials
-def validate_credentials(username, password):
-    user_role = None
-    for role, credentials in valid_credentials.items():
-        if username == credentials["username"] and password == credentials["password"]:
-            user_role = role
-            break
-    return user_role
 
 # Function to handle login button click
 def login():
-    global incorrect_attempts
     username = entry_username.get()
     password = entry_password.get()
 
-    user_role = validate_credentials(username, password)
-
-    if user_role:
+    # Simulate user validation (replace with your validation logic)
+    if username == "admin" and password == "1234":
         messagebox.showinfo("Success", "Login successful!")
         root.withdraw()  # Hide the login window
-        if user_role == "technician":
-            # Open the technician's form
-            open_application1()
-        elif user_role == "farmer":
-            # Open the farmer's form
-            open_application1()
+        open_application()
     else:
-        incorrect_attempts += 1
-        if incorrect_attempts >= 3:
-            messagebox.showerror("Error", "Too many incorrect login attempts. The application will now close.")
-            root.destroy()  # Close the application
-        else:
-            messagebox.showerror("Error", "Invalid credentials. Please try again.")
+        messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
-# Create and place labels and entry widgets for username and password
-label_username = tk.Label(root, text="Username:")
-label_username.pack()
-entry_username = tk.Entry(root)
-entry_username.pack()
-
-label_password = tk.Label(root, text="Password:")
-label_password.pack()
-entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
-entry_password.pack()
-
-# Create a button to perform login
-login_button = tk.Button(root, text="Login", command=login)
-login_button.pack()
+# Create a login button
+login_button = tk.Button(
+    login_frame,
+    text="Login",
+    command=login,
+    font=("Arial", 12, "bold"),
+    bg="green",
+    fg="white",
+)
+login_button.pack(pady=20)
 
 # Start the Tkinter main loop
 root.mainloop()

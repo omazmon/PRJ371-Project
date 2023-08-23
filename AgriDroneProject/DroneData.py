@@ -1,7 +1,8 @@
 import subprocess
+import time
 import tkinter as tk
 from PIL import Image, ImageTk
-from DroneBlocksTelloSimulator import drone
+from droneblocks.DroneBlocksTello import DroneBlocksTello
 
 # Create a Tkinter window
 root = tk.Tk()
@@ -15,23 +16,26 @@ background_image = Image.open("background-image.jpg")  # Replace with your backg
 background_photo = ImageTk.PhotoImage(background_image)
 background_label = tk.Label(root, image=background_photo)
 background_label.place(relwidth=1, relheight=1)
-
+tello = DroneBlocksTello()
 # Function to open the DroneData application
 def open_dronedata():
     subprocess.Popen(["python", "Crops.py"])
     root.destroy()
 
+
 # Function to take off
 def takeoff():
     flight_status_label.config(text="Flight Status: Flying...", fg="green")
-    drone.takeoff()
+    tello.takeoff()
     flight_status_label.config(text="Flight Status: ..Stationary", fg="black")
+    time.sleep(3)
 
 # Function to land
 def land():
     flight_status_label.config(text="Flight Status: Landing...", fg="red")
-    drone.land()
+    tello.land()
     flight_status_label.config(text="Flight Status: Landed", fg="black")
+    time.sleep(3)
 
 # Create a welcome label
 welcome_label = tk.Label(root, text="Welcome to AgriDrone!", font=("Times New Roman", 24, "bold"), fg="black")
