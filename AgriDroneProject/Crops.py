@@ -1,6 +1,17 @@
 import cv2
-import tkinter as tk
 from DroneBlocksTelloSimulator import drone
+import tkinter as tk
+from tkinter import PhotoImage
+from PIL import Image, ImageTk
+root = tk.Tk()
+root.title("Report and Analysis")
+
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+
+background_image = Image.open("background-image.jpg")  # Replace with your background image file
+background_photo = ImageTk.PhotoImage(background_image)
+background_label = tk.Label(root, image=background_photo)
+background_label.place(relwidth=1, relheight=1)
 
 # Function to handle Tello sensor data
 def handle_tello_data(event, sender, data):
