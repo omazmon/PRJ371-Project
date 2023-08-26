@@ -18,10 +18,29 @@ def getKey(keyName):
     return ans
 
 def main():
+    if getKey("q"):
+        print("drone has landed")
+    if getKey("e"):
+        print("drone has taken off")
+
     if getKey("LEFT"):
-        print("Left key pressed")
+        print("drone moved left")
     if getKey("RIGHT"):
-        print("Right key pressed")
+        print("drone moved right")
+    if getKey("UP"):
+        print("drone moved forward")
+    if getKey("DOWN"):
+        print("drone moved backward")
+    if getKey("w"):
+        print("drone went higher")
+    if getKey("s"):
+        print("drone went lower")
+    if getKey("a"):
+        print("drone moved clockwise")
+    if getKey("d"):
+        print("drone moved anticlockwise")
+
+
 
 # logs in key strokes
 
