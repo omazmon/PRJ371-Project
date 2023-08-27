@@ -9,7 +9,14 @@ root = tk.Tk()
 root.title("AgriDrone Report")
 
 # Set the window size to fullscreen
-root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+root.attributes('-fullscreen', True)
+
+# Function to exit fullscreen mode (press Esc to exit)
+def exit_fullscreen(event):
+    root.attributes('-fullscreen', False)
+
+# Bind the Escape key to exit fullscreen mode
+root.bind('<Escape>', exit_fullscreen)
 
 # Set the background image
 background_image = Image.open("background-image.jpg")  # Replace with your background image file
@@ -50,13 +57,14 @@ try:
         # Capture video frame from the Tello Simulator (replace this with your image processing logic)
         frame = simulator.read_video_frame()
 
-        # Process the frame (e.g., display it)
-        cv2.imshow("Tello Video", frame)
+        if frame is not None:
+            # Process the frame (e.g., display it)
+            cv2.imshow("Tello Video", frame)
 
-        # Update the label with the processed frame
-        video_photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
-        video_label.configure(image=video_photo)
-        video_label.image = video_photo
+            # Update the label with the processed frame
+            video_photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            video_label.configure(image=video_photo)
+            video_label.image = video_photo
 
         # Call this function again after a delay (e.g., 100 milliseconds)
         root.after(100, update_video_frame)

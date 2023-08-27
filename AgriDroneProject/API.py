@@ -9,8 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 from matplotlib import pyplot as plt
 from flask import Flask, request, jsonify
-
-from AgriDroneProject.DroneData import cap
+import cap
 
 # Global variables
 is_recording = False

@@ -1,6 +1,8 @@
 import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+import pyodbc
 from PIL import Image, ImageTk
 from DroneBlocksTelloSimulator import drone
 
@@ -26,7 +28,7 @@ background_label.place(relwidth=1, relheight=1)
 # Function to open the DroneData application
 def open_dronedata():
     selected_province = location_combobox.get()
-    farm_name = farm_name_entry.get()  # Get the farm name from the text box
+    farm_name = farm_names.get()  # Get the farm name from the text box
     selected_crop = crop_combobox.get()  # Get the selected crop type
     if selected_province != "Please select province" and farm_name and selected_crop:
         # You can use selected_province, farm_name, and selected_crop here for further processing
@@ -41,10 +43,29 @@ welcome_label.pack()
 
 # Create a farm name label and text box
 farm_name_label = ttk.Label(root, text="Farm Name:")
-farm_name_entry = ttk.Entry(root)
 farm_name_label.pack()
-farm_name_entry.pack()
 
+farm_names_query = "SELECT FarmName FROM farm"
+conn_str = (
+            r'DRIVER={SQL Server Native Client 11.0};'
+            r'SERVER=Mthokozisi-2\SQLEXPRESS;'
+            r'DATABASE=AgriDrone;'
+            r'Trusted_Connection=yes;'
+        )
+        conn = pyodbc.connect(conn_str)
+# Execute the query
+cursor.execute(farm_names_query)
+
+# Fetch all the farm names
+farm_names = cursor.fetchall()
+
+# Extract farm names from the result and convert them to a list
+farm_names_list = [row[0] for row in farm_names]
+
+# Create a combobox to display farm names
+farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
+farm_name_combobox.set("Select Farm Name")
+farm_name_combobox.pack()
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")
 location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
