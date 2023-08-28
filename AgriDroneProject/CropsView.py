@@ -1,9 +1,8 @@
+import DroneBlocksTelloSimulator
 import cv2
 import tkinter as tk
-from tkinter import PhotoImage
 from PIL import Image, ImageTk
-from droneblocks.DroneBlocksTello import DroneBlocksTello
-
+from DroneBlocksTelloSimulator import drone
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Report")
@@ -43,19 +42,18 @@ def handle_tello_data(event, sender, data):
         pass
 
 # Create a Tello Simulator object
-simulator = DroneBlocksTello()
-
+drone = DroneBlocksTelloSimulator.drone()
 try:
     # Connect to the Tello Simulator
-    simulator.connect()
+    drone.connect()
 
     # Start receiving video stream (you can capture frames here)
-    simulator.start_video()
+    drone.start_video()
 
     # Function to update the video frame
     def update_video_frame():
         # Capture video frame from the Tello Simulator (replace this with your image processing logic)
-        frame = simulator.read_video_frame()
+        frame = drone.read_video_frame()
 
         if frame is not None:
             # Process the frame (e.g., display it)

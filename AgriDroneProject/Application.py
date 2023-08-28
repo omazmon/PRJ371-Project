@@ -1,10 +1,9 @@
 import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
-
 import pyodbc
 from PIL import Image, ImageTk
-from DroneBlocksTelloSimulator import drone
+from sqlalchemy.engine import cursor
 
 # Create a list of provinces in South Africa
 provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
@@ -52,7 +51,7 @@ conn_str = (
             r'DATABASE=AgriDrone;'
             r'Trusted_Connection=yes;'
         )
-        conn = pyodbc.connect(conn_str)
+conn = pyodbc.connect(conn_str)
 # Execute the query
 cursor.execute(farm_names_query)
 

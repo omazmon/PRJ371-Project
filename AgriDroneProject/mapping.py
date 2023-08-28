@@ -1,10 +1,8 @@
 import math
-
 import cv2
 from djitellopy import tello
 import KeyPressModule as kp
 import numpy as np
-
 from time import sleep
 
 ##MAPPING SHOWS WHERE THE DRONE IS AND WHERE IT HAS GONE AS WELL AS CO_ORDINATES
