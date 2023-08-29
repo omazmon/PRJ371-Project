@@ -21,41 +21,7 @@ root = tk.Tk()
 root.title("AgriDrone Control")
 
 # Create a label for status messages
-status_label = ttk.Label(root, text="")
-status_label.pack()
 
-# Function to start or stop video recording
-def toggle_record():
-    global is_recording, video_writer
-    if is_recording:
-        is_recording = False
-        video_writer.release()
-        record_button.config(text="Start Recording")
-    else:
-        is_recording = True
-        now = datetime.now()
-        timestamp = now.strftime("%Y%m%d%H%M%S")
-        video_filename = f"video_{timestamp}.avi"
-        video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
-        record_button.config(text="Stop Recording")
-
-# Create a button for recording control
-record_button = ttk.Button(root, text="Start Recording", command=toggle_record)
-record_button.pack()
-
-# Function to capture an image
-def capture_image():
-    ret, frame = cap.read()
-    if ret:
-        now = datetime.now()
-        timestamp = now.strftime("%Y%m%d%H%M%S")
-        image_filename = f"image_{timestamp}.jpg"
-        cv2.imwrite(image_filename, frame)
-        status_label.config(text=f"Image saved as {image_filename}")
-
-# Create a button for capturing images
-capture_button = ttk.Button(root, text="Capture Image", command=capture_image)
-capture_button.pack()
 
 # Function to display a temperature heat map
 def display_temperature_heatmap(temperature_data):

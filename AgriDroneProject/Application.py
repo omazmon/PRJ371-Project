@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import pyodbc
 from PIL import Image, ImageTk
-from sqlalchemy.engine import cursor
 
 # Create a list of provinces in South Africa
 provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
@@ -27,11 +26,11 @@ background_label.place(relwidth=1, relheight=1)
 # Function to open the DroneData application
 def open_dronedata():
     selected_province = location_combobox.get()
-    farm_name = farm_names.get()  # Get the farm name from the text box
+    farm_name = farm_name_combobox.get()  # Get the farm name from the combobox
     selected_crop = crop_combobox.get()  # Get the selected crop type
     if selected_province != "Please select province" and farm_name and selected_crop:
         # You can use selected_province, farm_name, and selected_crop here for further processing
-        subprocess.Popen(["python", "DroneData.py"])
+        subprocess.Popen(["python", "DroneGui.py"])
         root.destroy()
     else:
         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
@@ -40,31 +39,39 @@ def open_dronedata():
 welcome_label = tk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 24, "bold"), fg="black")
 welcome_label.pack()
 
-# Create a farm name label and text box
+# Create a farm name label and combobox
 farm_name_label = ttk.Label(root, text="Farm Name:")
 farm_name_label.pack()
 
-farm_names_query = "SELECT FarmName FROM farm"
+# Create a connection to the database
 conn_str = (
-            r'DRIVER={SQL Server Native Client 11.0};'
-            r'SERVER=Mthokozisi-2\SQLEXPRESS;'
-            r'DATABASE=AgriDrone;'
-            r'Trusted_Connection=yes;'
-        )
-conn = pyodbc.connect(conn_str)
-# Execute the query
-cursor.execute(farm_names_query)
+    r'DRIVER={SQL Server Native Client 11.0};'
+    r'SERVER=Mthokozisi-2\SQLEXPRESS;'
+    r'DATABASE=AgriDrone;'
+    r'Trusted_Connection=yes;'
+)
 
-# Fetch all the farm names
-farm_names = cursor.fetchall()
+try:
+    conn = pyodbc.connect(conn_str)
+    cursor = conn.cursor()
 
-# Extract farm names from the result and convert them to a list
-farm_names_list = [row[0] for row in farm_names]
+    # Execute the query to fetch farm names
+    farm_names_query = "SELECT FarmName FROM farm"
+    cursor.execute(farm_names_query)
 
-# Create a combobox to display farm names
-farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
-farm_name_combobox.set("Select Farm Name")
-farm_name_combobox.pack()
+    # Fetch all the farm names
+    farm_names = cursor.fetchall()
+
+    # Extract farm names from the result and convert them to a list
+    farm_names_list = [row[0] for row in farm_names]
+
+    # Create a combobox to display farm names
+    farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
+    farm_name_combobox.set("Select Farm Name")
+    farm_name_combobox.pack()
+except Exception as e:
+    messagebox.showerror("Error", f"Failed to connect to the database: {e}")
+
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")
 location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
@@ -80,7 +87,7 @@ crop_label.pack()
 crop_combobox.pack()
 
 # Create a button for Crop Assessment (formerly DroneData)
-crop_assessment_button = ttk.Button(root, text="Drone start", command=open_dronedata)
+crop_assessment_button = ttk.Button(root, text="Start Drone", command=open_dronedata)
 crop_assessment_button.pack()
 
 # Start the GUI main loop

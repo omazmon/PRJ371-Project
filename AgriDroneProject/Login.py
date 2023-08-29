@@ -1,6 +1,7 @@
 import subprocess
 import tkinter as tk
 from tkinter import messagebox
+import bcrypt
 from PIL import Image, ImageTk
 
 # Create the main application window
@@ -32,8 +33,8 @@ def open_application():
 
 # Define valid credentials for the technician and farmer
 valid_credentials = {
-    "technician": {"username": "admin", "password": "1234"},
-    "farmer": {"username": "farmer", "password": "password123"}
+    "technician": {"username": "admin", "password": bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())},
+    "farmer": {"username": "farmer", "password": bcrypt.hashpw("password123".encode('utf-8'), bcrypt.gensalt())}
 }
 
 # Track incorrect login attempts
@@ -43,7 +44,7 @@ incorrect_attempts = 0
 def validate_credentials(username, password):
     user_role = None
     for role, credentials in valid_credentials.items():
-        if username == credentials["username"] and password == credentials["password"]:
+        if username == credentials["username"] and bcrypt.checkpw(password.encode('utf-8'), credentials["password"]):
             user_role = role
             break
     return user_role

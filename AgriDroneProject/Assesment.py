@@ -1,15 +1,14 @@
-import DroneBlocksTelloSimulator
 import cv2
 import tkinter as tk
 from PIL import Image, ImageTk
-from DroneBlocksTelloSimulator import drone
+from droneblocks.DroneBlocksTello import DroneBlocksTello
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Report")
 
 # Set the window size to fullscreen
 root.attributes('-fullscreen', True)
-
+drone = DroneBlocksTello()
 # Function to exit fullscreen mode (press Esc to exit)
 def exit_fullscreen(event):
     root.attributes('-fullscreen', False)
@@ -40,20 +39,17 @@ def handle_tello_data(event, sender, data):
     if event == "data":
         # Parse the log data to extract sensor information (not available in the simulator)
         pass
-
-# Create a Tello Simulator object
-drone = DroneBlocksTelloSimulator.drone()
 try:
     # Connect to the Tello Simulator
     drone.connect()
 
     # Start receiving video stream (you can capture frames here)
-    drone.start_video()
+    drone.stream_on()
 
     # Function to update the video frame
     def update_video_frame():
         # Capture video frame from the Tello Simulator (replace this with your image processing logic)
-        frame = drone.read_video_frame()
+        frame = drone.get_frame_read()
 
         if frame is not None:
             # Process the frame (e.g., display it)
