@@ -4,12 +4,6 @@ from tkinter import ttk, messagebox
 import pyodbc
 from PIL import Image, ImageTk
 
-# Create a list of provinces in South Africa
-provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
-
-# Create a list of top 5 farming crops in South Africa
-top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
-
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone")
@@ -34,7 +28,11 @@ def open_dronedata():
         root.destroy()
     else:
         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
+# Create a list of provinces in South Africa
+provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
 
+# Create a list of top 5 farming crops in South Africa
+top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
 welcome_label = tk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 24, "bold"), fg="black")
 welcome_label.pack()

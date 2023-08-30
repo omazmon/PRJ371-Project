@@ -16,12 +16,6 @@ def exit_fullscreen(event):
 # Bind the Escape key to exit fullscreen mode
 root.bind('<Escape>', exit_fullscreen)
 
-# Set the background image
-background_image = Image.open("background-image.jpg")  # Replace with your background image file
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
-
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
 analysis_label.pack()

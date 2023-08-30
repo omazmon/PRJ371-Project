@@ -2,20 +2,12 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
-from PIL import Image, ImageTk
-
 # Create the main application window
 root = tk.Tk()
 root.title("Login Form")
 
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-
-# Set the background image
-background_image = Image.open("background-image.jpg")  # Replace with your background image file
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
 
 # Create a label for instructions
 login_instructions = tk.Label(

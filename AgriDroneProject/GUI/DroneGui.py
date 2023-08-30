@@ -15,11 +15,6 @@ root.title("AgriDrone")
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
-# Set the background image
-background_image = Image.open("background-image.jpg")
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
 tello = DroneBlocksTello()
 # Function to open the DroneData application
 def open_dronedata():
