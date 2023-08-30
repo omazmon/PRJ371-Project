@@ -1,8 +1,10 @@
-use master
-Create database AgriDrone;
+Use master
+create database AgriDrone;
+Go
+USE AgriDrone;
 go
-use AgriDrone;
-CREATE TABLE farm(
+-- Create the Farm table
+CREATE TABLE Farm (
     FarmID INT PRIMARY KEY,
     FarmName VARCHAR(100),
     Location VARCHAR(200),
@@ -11,6 +13,7 @@ CREATE TABLE farm(
     ContactNumber VARCHAR(20)
 );
 GO
+
 -- Create the Crops table
 CREATE TABLE Crops (
     CropID INT PRIMARY KEY,
@@ -22,10 +25,12 @@ CREATE TABLE Crops (
     FOREIGN KEY (FarmID) REFERENCES Farm(FarmID)
 );
 GO
+
+-- Create the CropHealthData table
 CREATE TABLE CropHealthData (
-    DataID INT PRIMARY KEY,
+    DataID INT PRIMARY KEY, -- Assumed primary key
     CropID INT,
-	Field_ID INT,
+    Field_ID INT,
     Timestamp DATETIME,
     NDVI FLOAT,
     Temperature FLOAT,
@@ -36,10 +41,10 @@ CREATE TABLE CropHealthData (
     Field_Name VARCHAR(255),
     Crop_Type VARCHAR(100),
     GPS_Coordinates VARCHAR(50),
-	LastUpdate DATETIME
-	FOREIGN KEY (CropID) REFERENCES Crops(CropID),
+    LastUpdate DATETIME
 );
 GO
+
 -- Create the Soil table
 CREATE TABLE Soil (
     SoilID INT PRIMARY KEY,
@@ -55,80 +60,96 @@ GO
 CREATE TABLE Technicians (
     TechnicianID INT PRIMARY KEY,
     TechnicianName VARCHAR(100),
-    ContactNumber VARCHAR(20),
+    ContactNumber VARCHAR(20)
 );
 GO
+
+-- Create the IrrigationSchedule table
 CREATE TABLE IrrigationSchedule (
     ScheduleID INT PRIMARY KEY,
-    FieldID INT, -- Foreign key to link to Fields table
-    CropID INT, -- Foreign key to link to Crops table
+    FieldID INT,
+    CropID INT,
     Date DATE NOT NULL,
     AmountToIrrigate DECIMAL(5, 2) NOT NULL,
+    FOREIGN KEY (FieldID) REFERENCES CropHealthData(Field_ID),
+    FOREIGN KEY (CropID) REFERENCES Crops(CropID)
 );
-CREATE TABLE PestControlData(
+GO
+
+-- Create the PestControlData table
+CREATE TABLE PestControlData (
     PestID INT PRIMARY KEY,
     Datetime DATETIME,
     Image VARCHAR(MAX),
     Coordinates GEOGRAPHY,
     TemperatureDetected FLOAT,
     Object VARCHAR(255),
+    Field_ID INT,
+    CropID INT,
+    FOREIGN KEY (Field_ID) REFERENCES CropHealthData(Field_ID),
+    FOREIGN KEY (CropID) REFERENCES Crops(CropID)
 );
+GO
 
--- Flight Log Table
+-- Create the FlightLog table
 CREATE TABLE FlightLog (
     Flight_ID INT PRIMARY KEY,
     Field_ID INT,
     Flight_Date DATE,
     Flight_Duration TIME,
     Purpose VARCHAR(100),
-    FOREIGN KEY (Field_ID) REFERENCES CropHealth(Field_ID)
+    CropID INT,
+    FOREIGN KEY (Field_ID) REFERENCES CropHealthData(Field_ID),
+    FOREIGN KEY (CropID) REFERENCES Crops(CropID)
 );
+GO
 
--- Image Table
+-- Create the Image table
 CREATE TABLE Image (
     Image_ID INT PRIMARY KEY,
     Flight_ID INT,
     Image_File_Path VARCHAR(255),
     Capture_Date DATE,
     Sensor_Type VARCHAR(50),
-	Datetime DATETIME,
+    Datetime DATETIME,
     FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
 );
+GO
 
--- Orthomosaic Table maybe change the name of the table to heat map table
+-- Create the Orthomosaic table
 CREATE TABLE Orthomosaic (
     Orthomosaic_ID INT PRIMARY KEY,
     Flight_ID INT,
     Mosaic_File_Path VARCHAR(255),
     Processing_Date DATE,
     FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
-); --remember i did aeriel surveying and mapping, this table is about the images collected to make a bigger image.
-  --meaning the images taken by the dron would be relatively small, this combines those images to make a bigger picture.
---e.g surveying one large area.
+);
+GO
 
--- Elevation Data Table
+-- Create the ElevationData table
 CREATE TABLE ElevationData (
     Elevation_ID INT PRIMARY KEY,
     Field_ID INT,
     Image_ID INT,
-    Elevation_Values TEXT, -- Store elevation data as needed
-    FOREIGN KEY (Field_ID) REFERENCES Field(Field_ID),
+    Elevation_Values TEXT,
+    FOREIGN KEY (Field_ID) REFERENCES CropHealthData(Field_ID),
     FOREIGN KEY (Image_ID) REFERENCES Image(Image_ID)
-);--Dont think this table is neccessary remember the drone already has the built-in function 
--- This is about ground elevation not drone elevation hence the field ID and image ID. unless we're assuming that the farm is on leveled ground?
+);
+GO
 
-
-
--- User Table
-CREATE TABLE Users(
+-- Create the Users table
+CREATE TABLE Users (
     User_ID INT PRIMARY KEY,
     First_Name VARCHAR(50),
     Last_Name VARCHAR(50),
     Username VARCHAR(50),
     Password VARCHAR(100),
-    Role VARCHAR(50)
+    Role VARCHAR(50),
+    FOREIGN KEY (Role) REFERENCES CropHealthData(Crop_Type)
 );
--- Insert data into the Farm table
+GO
+
+GO
 INSERT INTO Farm(FarmID, FarmName, Location, FarmSize, OwnerName, ContactNumber)
 VALUES
     (1, 'Farm 1', 'Location 1', 100.5, 'Owner 1', '123-456-7890'),
@@ -286,4 +307,3 @@ SELECT
     CH.Field_Name
 FROM CropHealthData CH
 JOIN Crops C ON CH.CropID = C.CropID;
-go
