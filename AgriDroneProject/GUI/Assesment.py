@@ -1,31 +1,51 @@
 import tkinter as tk
 import cv2
-import numpy as np
-from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from djitellopy import Tello
+import numpy as np
+from sklearn.svm import SVC
+
+# Load the pre-extracted features and labels
+features = np.load('features.npy')
+labels = np.load('labels.npy')
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(features, labels, test_size=0.2, random_state=42)
+
+# Initialize and train a Support Vector Machine (SVM) classifier
+clf = SVC(kernel='linear', C=1)
+clf.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred = clf.predict(X_test)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy * 100:.2f}%")
 
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
 drone.streamon()
 
-# Load the trained machine learning model and label encoder
-clf = SVC(kernel='linear', C=1)
-clf.load("your_model_path")  # Load your trained model
-label_encoder = LabelEncoder()
-label_encoder.classes_ = np.load("your_label_encoder_path.npy", allow_pickle=True)  # Load your label encoder
-
-# Function to preprocess and predict crop condition from a frame
-def predict_crop_condition(frame):
-    frame = cv2.resize(frame, (64, 64)).flatten() / 255.0
-    prediction = clf.predict([frame])
-    predicted_class = label_encoder.inverse_transform(prediction)[0]
-    return predicted_class
+# Load the trained machine learning model and label encoder for crop condition
+crop_condition_clf = SVC(kernel='linear', C=1)
+crop_condition_clf.load("your_crop_condition_model_path")  # Load your trained crop condition model
+crop_condition_label_encoder = LabelEncoder()
+crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)  # Load your label encoder
 
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Report")
+
+# Function to preprocess and predict crop condition from a frame
+def predict_crop_condition(frame):
+    frame = cv2.resize(frame, (64, 64)).flatten() / 255.0
+    prediction = crop_condition_clf.predict([frame])
+    predicted_class = crop_condition_label_encoder.inverse_transform(prediction)[0]
+    return predicted_class
 
 # Function to calculate NDVI
 def calculate_ndvi(image):
@@ -43,11 +63,9 @@ def calculate_ndvi(image):
 
 # Function to identify pests or diseases
 def identify_pests_or_diseases(image):
-
     green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
     threshold = 100  # Adjust this threshold as needed
     pests_detected = np.where(green_channel < threshold, 1, 0)
-
     return pests_detected
 
 def capture_and_analyze():

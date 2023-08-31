@@ -1,9 +1,34 @@
 import threading
 from flask import Flask, request, jsonify
-import cap
 import logging
-
+from AgriDroneProject.GUI.Assesment import X_test, y_test, y_train, X_train
 from AgriDroneProject.GUI.DroneGui import toggle_record, capture_image, root
+import tensorflow as tf
+from tensorflow.keras import layers, models
+
+# Define the CNN model
+model = models.Sequential([
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
+    layers.MaxPooling2D((2, 2)),
+    layers.Flatten(),
+    layers.Dense(128, activation='relu'),
+    layers.Dense(num_classes, activation='softmax')  # num_classes is the number of crop conditions
+])
+
+# Compile the model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train the model using your prepared dataset
+model.fit(X_train, y_train, epochs=10, validation_data=(X_test, y_test))
+
+# Evaluate the model
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print(f"Test accuracy: {test_accuracy * 100:.2f}%")
+
+# Save the trained model and label encoder
+model.save("crop_condition_model.h5")
 
 # Create a logger
 logger = logging.getLogger(__name__)
