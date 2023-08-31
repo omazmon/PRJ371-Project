@@ -52,23 +52,20 @@ conn_str = (
 try:
     conn = pyodbc.connect(conn_str)
     cursor = conn.cursor()
-
-    # Execute the query to fetch farm names
+# Execute the query to fetch farm names
     farm_names_query = "SELECT FarmName FROM farm"
     cursor.execute(farm_names_query)
-
     # Fetch all the farm names
     farm_names = cursor.fetchall()
-
     # Extract farm names from the result and convert them to a list
     farm_names_list = [row[0] for row in farm_names]
-
     # Create a combobox to display farm names
     farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
     farm_name_combobox.set("Select Farm Name")
     farm_name_combobox.pack()
 except Exception as e:
     messagebox.showerror("Error", f"Failed to connect to the database: {e}")
+
 
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")

@@ -31,7 +31,6 @@ valid_credentials = {
 
 # Track incorrect login attempts
 incorrect_attempts = 0
-
 # Function to validate credentials
 def validate_credentials(username, password):
     user_role = None

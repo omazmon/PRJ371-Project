@@ -14,54 +14,92 @@ root.title("AgriDrone")
 
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+# Create a panel for the "Report from AgriDrone"
+report_panel = tk.LabelFrame(root, text="Report from AgriDrone", font=("Times New Roman", 16))
+report_panel.pack(padx=10, pady=10)
 
-tello = DroneBlocksTello()
+video_label = tk.Label(report_panel, text="Video/Image Placeholder", font=("Times New Roman", 12))
+video_label.pack()
+
+drone = DroneBlocksTello()
 # Function to open the DroneData application
 def open_dronedata():
     subprocess.Popen(["python", "Assesment.py"])
     root.destroy()
 
+# Function to handle Tello sensor data
+def handle_tello_data(event, sender, data):
+    if event == "data":
+        # Parse the log data to extract sensor information (not available in the simulator)
+        pass
+try:
+    # Connect to the Tello Simulator
+    drone.connect()
+    # Start receiving video stream (you can capture frames here)
+    drone.stream_on()
+    # Function to take off
+    def takeoff():
+        flight_status_label.config(text="Flight Status: Flying...", fg="green")
+        drone.takeoff()
+        flight_status_label.config(text="Flight Status: ..Stationary", fg="black")
+        time.sleep(3)
+    # Function to land
+    def land():
+        flight_status_label.config(text="Flight Status: Landing...", fg="red")
+        drone.land()
+        flight_status_label.config(text="Flight Status: Landed", fg="black")
+        time.sleep(3)
+    # Function to start or stop video recording
+    def toggle_record():
+        global is_recording, video_writer
+        if is_recording:
+            is_recording = False
+            video_writer.release()
+            record_button.config(text="Start Recording")
+        else:
+            is_recording = True
+            now = datetime.now()
+            timestamp = now.strftime("%Y%m%d%H%M%S")
+            video_filename = f"video_{timestamp}.avi"
+            video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
+            record_button.config(text="Stop Recording")
+    # Function to capture an image
+    def capture_image():
+        ret, frame = cap.read()
+        if ret:
+            now = datetime.now()
+            timestamp = now.strftime("%Y%m%d%H%M%S")
+            image_filename = f"image_{timestamp}.jpg"
+            cv2.imwrite(image_filename, frame)
+            status_label.config(text=f"Image saved as {image_filename}")
+    # Function to update the video frame
+    def update_video_frame():
+        # Capture video frame from the Tello Simulator (replace this with your image processing logic)
+        frame = drone.get_frame_read()
 
-# Function to take off
-def takeoff():
-    flight_status_label.config(text="Flight Status: Flying...", fg="green")
-    tello.takeoff()
-    flight_status_label.config(text="Flight Status: ..Stationary", fg="black")
-    time.sleep(3)
+        if frame is not None:
+            # Process the frame (e.g., display it)
+            cv2.imshow("Tello Video", frame)
 
-# Function to land
-def land():
-    flight_status_label.config(text="Flight Status: Landing...", fg="red")
-    tello.land()
-    flight_status_label.config(text="Flight Status: Landed", fg="black")
-    time.sleep(3)
+            # Update the label with the processed frame
+            video_photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
+            video_label.configure(image=video_photo)
+            video_label.image = video_photo
+
+        # Call this function again after a delay (e.g., 100 milliseconds)
+        root.after(100, update_video_frame)
+
+    # Start updating the video frame
+    update_video_frame()
+
+    # Start the GUI main loop
+    root.mainloop()
+
+except Exception as e:
+    print(f"Error: {str(e)}")
+
 status_label = ttk.Label(root, text="")
 status_label.pack()
-
-# Function to start or stop video recording
-def toggle_record():
-    global is_recording, video_writer
-    if is_recording:
-        is_recording = False
-        video_writer.release()
-        record_button.config(text="Start Recording")
-    else:
-        is_recording = True
-        now = datetime.now()
-        timestamp = now.strftime("%Y%m%d%H%M%S")
-        video_filename = f"video_{timestamp}.avi"
-        video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
-        record_button.config(text="Stop Recording")
-
-# Function to capture an image
-def capture_image():
-    ret, frame = cap.read()
-    if ret:
-        now = datetime.now()
-        timestamp = now.strftime("%Y%m%d%H%M%S")
-        image_filename = f"image_{timestamp}.jpg"
-        cv2.imwrite(image_filename, frame)
-        status_label.config(text=f"Image saved as {image_filename}")
 
 # Create a welcome label
 welcome_label = tk.Label(root, text="Drone Operations", font=("Times New Roman", 24, "bold"), fg="black")

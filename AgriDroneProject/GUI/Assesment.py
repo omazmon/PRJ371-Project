@@ -1,67 +1,85 @@
-import cv2
 import tkinter as tk
-from PIL import Image, ImageTk
-from droneblocks.DroneBlocksTello import DroneBlocksTello
+import cv2
+import numpy as np
+from sklearn.svm import SVC
+from sklearn.preprocessing import LabelEncoder
+from djitellopy import Tello
+
+# Initialize the Tello drone
+drone = Tello()
+drone.connect()
+drone.streamon()
+
+# Load the trained machine learning model and label encoder
+clf = SVC(kernel='linear', C=1)
+clf.load("your_model_path")  # Load your trained model
+label_encoder = LabelEncoder()
+label_encoder.classes_ = np.load("your_label_encoder_path.npy", allow_pickle=True)  # Load your label encoder
+
+# Function to preprocess and predict crop condition from a frame
+def predict_crop_condition(frame):
+    frame = cv2.resize(frame, (64, 64)).flatten() / 255.0
+    prediction = clf.predict([frame])
+    predicted_class = label_encoder.inverse_transform(prediction)[0]
+    return predicted_class
+
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Report")
 
-# Set the window size to fullscreen
-root.attributes('-fullscreen', True)
-drone = DroneBlocksTello()
-# Function to exit fullscreen mode (press Esc to exit)
-def exit_fullscreen(event):
-    root.attributes('-fullscreen', False)
+# Function to calculate NDVI
+def calculate_ndvi(image):
+    # Convert the input image to float32
+    image = image.astype(float)
 
-# Bind the Escape key to exit fullscreen mode
-root.bind('<Escape>', exit_fullscreen)
+    # Extract the red and near-infrared (NIR) channels
+    red_channel = image[:, :, 2]
+    nir_channel = image[:, :, 3]
+
+    # Calculate NDVI
+    ndvi = (nir_channel - red_channel) / (nir_channel + red_channel)
+
+    return ndvi
+
+# Function to identify pests or diseases
+def identify_pests_or_diseases(image):
+
+    green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
+    threshold = 100  # Adjust this threshold as needed
+    pests_detected = np.where(green_channel < threshold, 1, 0)
+
+    return pests_detected
+
+def capture_and_analyze():
+    frame = drone.get_frame_read().frame  # Capture a frame from the Tello camera
+
+    # Crop analysis
+    crop_condition = predict_crop_condition(frame)
+
+    # Calculate NDVI
+    ndvi_result = calculate_ndvi(frame)
+
+    # Identify pests or diseases
+    pests_or_diseases_result = identify_pests_or_diseases(frame)
+
+    # Display results
+    cv2.imshow("Original Image", frame)
+    cv2.imshow("NDVI", ndvi_result)
+    cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)  # Convert to 8-bit for display
+
+    # Update the analysis label
+    analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
 analysis_label.pack()
 
-# Create a panel for the "Report from AgriDrone"
-report_panel = tk.LabelFrame(root, text="Report from AgriDrone", font=("Times New Roman", 16))
-report_panel.pack(padx=10, pady=10)
+# Create a button to trigger the analysis
+analyze_button = tk.Button(root, text="Analyze Crop", command=capture_and_analyze)
+analyze_button.pack()
 
-# Create a label to display the video/image (replace with your logic)
-video_label = tk.Label(report_panel, text="Video/Image Placeholder", font=("Times New Roman", 12))
-video_label.pack()
-
-# Function to handle Tello sensor data
-def handle_tello_data(event, sender, data):
-    if event == "data":
-        # Parse the log data to extract sensor information (not available in the simulator)
-        pass
-try:
-    # Connect to the Tello Simulator
-    drone.connect()
-
-    # Start receiving video stream (you can capture frames here)
-    drone.stream_on()
-
-    # Function to update the video frame
-    def update_video_frame():
-        # Capture video frame from the Tello Simulator (replace this with your image processing logic)
-        frame = drone.get_frame_read()
-
-        if frame is not None:
-            # Process the frame (e.g., display it)
-            cv2.imshow("Tello Video", frame)
-
-            # Update the label with the processed frame
-            video_photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)))
-            video_label.configure(image=video_photo)
-            video_label.image = video_photo
-
-        # Call this function again after a delay (e.g., 100 milliseconds)
-        root.after(100, update_video_frame)
-
-    # Start updating the video frame
-    update_video_frame()
-
-    # Start the GUI main loop
-    root.mainloop()
-
-except Exception as e:
-    print(f"Error: {str(e)}")
+# Run the Tkinter main loop
+root.mainloop()

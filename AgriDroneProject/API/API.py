@@ -3,6 +3,8 @@ from flask import Flask, request, jsonify
 import cap
 import logging
 
+from AgriDroneProject.GUI.DroneGui import toggle_record, capture_image, root
+
 # Create a logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
