@@ -1,11 +1,14 @@
 import tkinter as tk
 import cv2
+from future.moves.tkinter import messagebox
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from djitellopy import Tello
 import numpy as np
 from sklearn.svm import SVC
+from PIL import Image, ImageTk
+import cap
 
 # Load the pre-extracted features and labels
 features = np.load('features.npy')
@@ -39,6 +42,51 @@ crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encod
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Report")
+# Function to update video until connection is established
+def update_video():
+    ret, frame = cap.read()
+    if ret:
+        # Process the frame to identify crop issues
+        processed_frame = process_frame(frame)
+
+        # Convert the processed frame to a format compatible with Tkinter
+        img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
+        img = ImageTk.PhotoImage(image=img)
+
+        # Update the label with the new frame
+        video_label.img = img
+        video_label.config(image=img)
+
+        # Schedule the update function to run periodically
+        root.after(10, update_video)
+    else:
+        # If the connection is lost, stop updating the video
+        print("Connection lost. Stopping video update.")
+        cap.release()
+
+# Start the video update loop
+update_video()
+# Function to process each frame
+def process_frame(frame):
+    # Convert the frame to grayscale for simpler processing
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Apply image processing techniques to identify crop issues
+    # You can use any image processing or computer vision techniques here
+
+    # Example: Detect edges using Canny edge detection
+    edges = cv2.Canny(gray, 50, 150)
+
+    # Example: Find contours in the image
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Example: Draw bounding boxes around detected issues
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)  # Red rectangle
+
+    return frame
 
 # Function to preprocess and predict crop condition from a frame
 def predict_crop_condition(frame):
@@ -67,7 +115,9 @@ def identify_pests_or_diseases(image):
     threshold = 100  # Adjust this threshold as needed
     pests_detected = np.where(green_channel < threshold, 1, 0)
     return pests_detected
-
+def close_application():
+    messagebox.showinfo("Goodbye", "LogOut successful!")
+    root.destroy()
 def capture_and_analyze():
     frame = drone.get_frame_read().frame  # Capture a frame from the Tello camera
 
@@ -91,13 +141,20 @@ def capture_and_analyze():
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+# Create a button to trigger the video stream
+video_button = tk.Button(root, text="View stream", command=update_video)
+video_button.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
 analysis_label.pack()
+# Create a label for displaying the video feed
+video_label = tk.Label(root)
+video_label.pack()
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crop", command=capture_and_analyze)
 analyze_button.pack()
-
+logout_button = tk.Button(root, text="LogOut",command=close_application)
+logout_button.pack()
 # Run the Tkinter main loop
 root.mainloop()

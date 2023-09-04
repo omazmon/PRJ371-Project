@@ -66,6 +66,9 @@ try:
 except Exception as e:
     messagebox.showerror("Error", f"Failed to connect to the database: {e}")
 
+def close_application():
+    messagebox.showinfo("Goodbye", "LogOut successful!")
+    root.destroy()
 
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")
@@ -85,5 +88,7 @@ crop_combobox.pack()
 crop_assessment_button = ttk.Button(root, text="Start Drone", command=open_dronedata)
 crop_assessment_button.pack()
 
+logout_button = tk.Button(root, text="LogOut",command=close_application)
+logout_button.pack()
 # Start the GUI main loop
 root.mainloop()

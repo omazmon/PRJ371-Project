@@ -1,10 +1,8 @@
 import threading
 from flask import Flask, request, jsonify
 import logging
-from AgriDroneProject.GUI.Assesment import X_test, y_test, y_train, X_train
 from AgriDroneProject.GUI.DroneGui import toggle_record, capture_image, root
-import tensorflow as tf
-from tensorflow.keras import layers, models
+
 
 # Define the CNN model
 model = models.Sequential([

@@ -7,6 +7,7 @@ import cap
 import cv2
 from PIL import Image, ImageTk
 from droneblocks.DroneBlocksTello import DroneBlocksTello
+from future.moves.tkinter import messagebox
 
 # Create a Tkinter window
 root = tk.Tk()
@@ -22,33 +23,44 @@ video_label = tk.Label(report_panel, text="Video/Image Placeholder", font=("Time
 video_label.pack()
 
 drone = DroneBlocksTello()
+
+
 # Function to open the DroneData application
 def open_dronedata():
     subprocess.Popen(["python", "Assesment.py"])
     root.destroy()
+
 
 # Function to handle Tello sensor data
 def handle_tello_data(event, sender, data):
     if event == "data":
         # Parse the log data to extract sensor information (not available in the simulator)
         pass
+
+
 try:
     # Connect to the Tello Simulator
     drone.connect()
     # Start receiving video stream (you can capture frames here)
     drone.stream_on()
+
+
     # Function to take off
     def takeoff():
         flight_status_label.config(text="Flight Status: Flying...", fg="green")
         drone.takeoff()
         flight_status_label.config(text="Flight Status: ..Stationary", fg="black")
         time.sleep(3)
+
+
     # Function to land
     def land():
         flight_status_label.config(text="Flight Status: Landing...", fg="red")
         drone.land()
         flight_status_label.config(text="Flight Status: Landed", fg="black")
         time.sleep(3)
+
+
     # Function to start or stop video recording
     def toggle_record():
         global is_recording, video_writer
@@ -63,6 +75,8 @@ try:
             video_filename = f"video_{timestamp}.avi"
             video_writer = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'XVID'), 30, (640, 480))
             record_button.config(text="Stop Recording")
+
+
     # Function to capture an image
     def capture_image():
         ret, frame = cap.read()
@@ -72,6 +86,8 @@ try:
             image_filename = f"image_{timestamp}.jpg"
             cv2.imwrite(image_filename, frame)
             status_label.config(text=f"Image saved as {image_filename}")
+
+
     # Function to update the video frame
     def update_video_frame():
         # Capture video frame from the Tello Simulator (replace this with your image processing logic)
@@ -89,6 +105,7 @@ try:
         # Call this function again after a delay (e.g., 100 milliseconds)
         root.after(100, update_video_frame)
 
+
     # Start updating the video frame
     update_video_frame()
 
@@ -97,6 +114,12 @@ try:
 
 except Exception as e:
     print(f"Error: {str(e)}")
+
+
+def close_application():
+    messagebox.showinfo("Goodbye", "LogOut successful!")
+    root.destroy()
+
 
 status_label = ttk.Label(root, text="")
 status_label.pack()
@@ -132,5 +155,8 @@ record_button.pack(padx=25, pady=5)
 # Create a "DroneData" button outside the panel
 dronedata_button = tk.Button(root, text="Report & Analysis", command=open_dronedata)
 dronedata_button.pack(pady=45)
+
+logout_button = tk.Button(root, text="LogOut", command=close_application)
+logout_button.pack(pady=55)
 # Start the GUI main loop
 root.mainloop()
