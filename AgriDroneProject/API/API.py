@@ -1,6 +1,9 @@
 import threading
 from flask import Flask, request, jsonify
 import logging
+from keras.src.applications.densenet import layers
+from requests import models
+from AgriDroneProject.GUI.Assesment import X_train, y_train, X_test, y_test
 from AgriDroneProject.GUI.DroneGui import toggle_record, capture_image, root
 
 
@@ -35,8 +38,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler = logging.FileHandler('agri_drone.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
-
-# ... Import necessary libraries ...
 
 # Define your configuration variables
 irrigation_threshold = 0.4
