@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 # Create a Tkinter window
 root = tk.Tk()
-root.title("AgriDrone")
+root.title("AgriDrone Application")
 
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
@@ -17,6 +17,7 @@ background_photo = ImageTk.PhotoImage(background_image)
 background_label = tk.Label(root, image=background_photo)
 background_label.place(relwidth=1, relheight=1)
 
+
 # Function to open the DroneData application
 def open_dronedata():
     selected_province = location_combobox.get()
@@ -24,12 +25,15 @@ def open_dronedata():
     selected_crop = crop_combobox.get()  # Get the selected crop type
     if selected_province != "Please select province" and farm_name and selected_crop:
         # You can use selected_province, farm_name, and selected_crop here for further processing
-        subprocess.Popen(["python", "DroneGui.py"])
+        subprocess.Popen(["python", "Assesment.py"])
         root.destroy()
     else:
         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
+
+
 # Create a list of provinces in South Africa
-provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo", "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
+provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
+             "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
 
 # Create a list of top 5 farming crops in South Africa
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
@@ -52,7 +56,7 @@ conn_str = (
 try:
     conn = pyodbc.connect(conn_str)
     cursor = conn.cursor()
-# Execute the query to fetch farm names
+    # Execute the query to fetch farm names
     farm_names_query = "SELECT FarmName FROM farm"
     cursor.execute(farm_names_query)
     # Fetch all the farm names
@@ -66,9 +70,11 @@ try:
 except Exception as e:
     messagebox.showerror("Error", f"Failed to connect to the database: {e}")
 
+
 def close_application():
     messagebox.showinfo("Goodbye", "LogOut successful!")
     root.destroy()
+
 
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")
@@ -88,7 +94,7 @@ crop_combobox.pack()
 crop_assessment_button = ttk.Button(root, text="Start Drone", command=open_dronedata)
 crop_assessment_button.pack()
 
-logout_button = tk.Button(root, text="LogOut",command=close_application)
+logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack()
 # Start the GUI main loop
 root.mainloop()
