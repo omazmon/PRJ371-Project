@@ -17,6 +17,31 @@ background_photo = ImageTk.PhotoImage(background_image)
 background_label = tk.Label(root, image=background_photo)
 background_label.place(relwidth=1, relheight=1)
 
+# Create a connection to the database
+conn_str = (
+    r'DRIVER={SQL Server Native Client 11.0};'
+    r'SERVER=Mthokozisi-2\SQLEXPRESS;'
+    r'DATABASE=AgriDrone;'
+    r'Trusted_Connection=yes;'
+)
+
+try:
+    conn = pyodbc.connect(conn_str)
+    cursor = conn.cursor()
+    # Execute the query to fetch farm names
+    farm_names_query = "SELECT FarmName FROM farm"
+    cursor.execute(farm_names_query)
+    # Fetch all the farm names
+    farm_names = cursor.fetchall()
+    # Extract farm names from the result and convert them to a list
+    farm_names_list = [row[0] for row in farm_names]
+    # Create a combobox to display farm names
+    farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
+    farm_name_combobox.set("Select Farm Name")
+    farm_name_combobox.pack()
+except Exception as e:
+    messagebox.showerror("Error", f"Failed to connect to the database: {e}")
+
 
 # Function to open the DroneData application
 def open_dronedata():
@@ -44,31 +69,6 @@ welcome_label.pack()
 # Create a farm name label and combobox
 farm_name_label = ttk.Label(root, text="Farm Name:")
 farm_name_label.pack()
-
-# Create a connection to the database
-conn_str = (
-    r'DRIVER={SQL Server Native Client 11.0};'
-    r'SERVER=Mthokozisi-2\SQLEXPRESS;'
-    r'DATABASE=AgriDrone;'
-    r'Trusted_Connection=yes;'
-)
-
-try:
-    conn = pyodbc.connect(conn_str)
-    cursor = conn.cursor()
-    # Execute the query to fetch farm names
-    farm_names_query = "SELECT FarmName FROM farm"
-    cursor.execute(farm_names_query)
-    # Fetch all the farm names
-    farm_names = cursor.fetchall()
-    # Extract farm names from the result and convert them to a list
-    farm_names_list = [row[0] for row in farm_names]
-    # Create a combobox to display farm names
-    farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
-    farm_name_combobox.set("Select Farm Name")
-    farm_name_combobox.pack()
-except Exception as e:
-    messagebox.showerror("Error", f"Failed to connect to the database: {e}")
 
 
 def close_application():
