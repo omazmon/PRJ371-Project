@@ -8,20 +8,21 @@ from tkinter import messagebox
 import numpy as np
 from djitellopy import Tello
 from PIL import Image, ImageTk
+from sklearn.externals import joblib
 
-# Load the pre-extracted features and labels
-features = np.load('features.npy')
-labels = np.load('labels.npy')
+try:
+    features = np.load('features.npy')
+    labels = np.load('labels.npy')
+    ndvi_map = cv2.imread('path_to_ndvi_map_image.jpg')
+    crop_condition_clf = SVC(kernel='linear', C=1)
+    crop_condition_clf.load("your_crop_condition_model_path")
+    crop_condition_label_encoder = LabelEncoder()
+    crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)
+except Exception as e:
+    print(f"Error loading data: {e}")
+    # Handle the error, show a message box, or exit the program.
+    exit()
 
-# Load the trained machine learning model and label encoder for crop condition
-crop_condition_clf = SVC(kernel='linear', C=1)
-crop_condition_clf.load("your_crop_condition_model_path")  # Load your trained crop condition model
-crop_condition_label_encoder = LabelEncoder()
-crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)  #
-
-# Initialize and train a Support Vector Machine (SVM) classifier
-clf = SVC(kernel='linear', C=1)
-clf.fit(features, labels)
 
 # Initialize the Tello drone
 drone = Tello()
@@ -41,58 +42,74 @@ root.title("AgriDrone Report")
 
 # Function to update video until connection is established
 def update_video():
-    ret, frame = cap.read()
-    if ret:
-        # Process the frame
-        processed_frame = process_frame(frame)
+    try:
+        ret, frame = cap.read()
+        if ret:
+            # Process the frame
+            processed_frame = process_frame(frame)
 
-        # Convert the processed frame to a format compatible with Tkinter
-        img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(image=img)
+            # Convert the processed frame to a format compatible with Tkinter
+            img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+            img = ImageTk.PhotoImage(image=img)
 
-        # Update the label with the new frame
-        video_label.img = img
-        video_label.config(image=img)
-        root.after(10, update_video)
-    else:
-        print("Connection lost. Stopping video update.")
+            # Update the label with the new frame
+            video_label.img = img
+            video_label.config(image=img)
+            root.after(10, update_video)
+        else:
+            print("Connection lost. Stopping video update.")
+            cap.release()
+    except Exception as E:
+        print(f"Error in update_video: {E}")
+        messagebox.showerror("Error", f"Error in update_video: {E}")
         cap.release()
+
+
+try:
+    crop_condition_clf = joblib.load("your_crop_condition_model_path.pkl")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    # Handle the error, show a message box, or exit the program.
+    exit()
+# Function to capture and analyze
+def capture_and_analyze():
+    try:
+        frame = drone.get_frame_read().frame
+
+        crop_condition = predict_crop_condition(frame)
+        ndvi_result = calculate_ndvi(frame)
+        pests_or_diseases_result = identify_pests_or_diseases(frame)
+        object_detected_frame = identify_objects(frame)
+
+        cv2.imshow("Original Image", frame)
+        cv2.imshow("NDVI", ndvi_result)
+        cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
+        cv2.imshow("Object Detection", object_detected_frame)
+
+        analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    except Exception as E:
+        print(f"Error in capture_and_analyze: {E}")
+        messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
 
 # Function to identify and label objects
 def identify_objects(frame):
     detected_objects, confidences = detect_objects(frame)
 
-    for i, (x1, y1, x2, y2, class_id) in enumerate(detected_objects):
+    for K, (x1, y1, x2, y2, class_id) in enumerate(detected_objects):
         label = classes[class_id]
-        confidence = confidences[i]
+        confidence = confidences[K]
         text = f"{label}: {confidence:.2f}"
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
     return frame
-
-
-# Function to capture and analyze
-def capture_and_analyze():
-    frame = drone.get_frame_read().frame
-
-    crop_condition = predict_crop_condition(frame)
-    ndvi_result = calculate_ndvi(frame)
-    pests_or_diseases_result = identify_pests_or_diseases(frame)
-    object_detected_frame = identify_objects(frame)
-
-    cv2.imshow("Original Image", frame)
-    cv2.imshow("NDVI", ndvi_result)
-    cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-    cv2.imshow("Object Detection", object_detected_frame)
-
-    analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 
 # Function to process each frame
@@ -125,16 +142,59 @@ def predict_crop_condition(frame):
     return predicted_class
 
 
+# Define color ranges for different nitrogen levels and soil types
+nitrogen_colors = {
+    (0, 0, 255): 250,  # Blue (high rate)
+    (0, 255, 255): 200,  # Yellow (medium rate)
+    (0, 255, 0): 150,  # Green (medium rate)
+    (0, 165, 255): 100,  # Orange (low rate)
+    (128, 0, 128): None  # Purple (no data)
+}
+
+soil_colors = {
+    (255, 0, 0): 'coarser texture, darker colored soil',
+    (0, 255, 255): 'coarser texture, lighter colored soil',
+    (0, 255, 0): 'nominal',
+    (0, 140, 255): 'finer texture, darker colored soil',
+    (128, 0, 128): 'finer texture, lighter colored soil'
+}
+
+
+# Function to identify nitrogen level from color
+def get_nitrogen_level(color):
+    for key in nitrogen_colors.keys():
+        if np.array_equal(color, np.array(key)):
+            return nitrogen_colors[key]
+    return None
+
+
+# Function to identify soil type from color
+def get_soil_type(color):
+    for key in soil_colors.keys():
+        if np.array_equal(color, np.array(key)):
+            return soil_colors[key]
+    return None
+
+
+# Process each pixel in the NDVI map to extract nitrogen levels and soil types
+for i in range(ndvi_map.shape[0]):
+    for j in range(ndvi_map.shape[1]):
+        pixel_color = ndvi_map[i, j]
+        nitrogen_level = get_nitrogen_level(pixel_color)
+        soil_type = get_soil_type(pixel_color)
+        if nitrogen_level is not None:
+            print(f'Nitrogen Level at pixel ({i}, {j}): {nitrogen_level}')
+        if soil_type is not None:
+            print(f'Soil Type at pixel ({i}, {j}): {soil_type}')
+
+
 # Function to calculate NDVI
 def calculate_ndvi(image):
-    # Convert the input image to float32
-    image = image.astype(float)
+    # Extract the red and near-infrared (NIR) channels as float32
+    red_channel = image[:, :, 2].astype(np.float32)
+    nir_channel = image[:, :, 3].astype(np.float32)
 
-    # Extract the red and near-infrared (NIR) channels
-    red_channel = image[:, :, 2]
-    nir_channel = image[:, :, 3]
-
-    # Calculate NDVI
+    # Calculate NDVI using vectorized operations
     ndvi = (nir_channel - red_channel) / (nir_channel + red_channel)
 
     return ndvi

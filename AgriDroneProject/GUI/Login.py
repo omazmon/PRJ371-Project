@@ -2,35 +2,33 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
+
 # Create the main application window
 root = tk.Tk()
 root.title("Login Form")
 
-# Set the window size to fullscreen
-root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+# Set a consistent color scheme
+BG_COLOR = "#f2f2f2"
+LABEL_COLOR = "#333333"
+BUTTON_COLOR = "#4CAF50"
 
-# Create a label for instructions
-login_instructions = tk.Label(
-    root,
-    text="Login",
-    font=("Times New Roman", 24, "bold"),
-    bg="white",  # Set the background color of the label
-)
-login_instructions.pack(pady=20)  # Add some padding
+# Set the window size to a fixed size for better appearance
+root.geometry("400x300")
+root.configure(bg=BG_COLOR)
+
 
 # Function to open the Application.py
 def open_application():
     root.destroy()
     subprocess.Popen(["python", "Application.py"])
 
-# Define valid credentials for the technician and farmer
+
 valid_credentials = {
     "technician": {"username": "admin", "password": bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())},
     "farmer": {"username": "farmer", "password": bcrypt.hashpw("password123".encode('utf-8'), bcrypt.gensalt())}
 }
 
-# Track incorrect login attempts
-incorrect_attempts = 0
+
 # Function to validate credentials
 def validate_credentials(username, password):
     user_role = None
@@ -40,41 +38,35 @@ def validate_credentials(username, password):
             break
     return user_role
 
+
 # Function to handle login button click
 def login():
-    global incorrect_attempts
     username = entry_username.get()
     password = entry_password.get()
 
     user_role = validate_credentials(username, password)
 
     if user_role:
-        messagebox.showinfo("Success", "Login successful!")
-        root.withdraw()  # Hide the login window
+        messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
+        root.withdraw()
         open_application()
     else:
-        incorrect_attempts += 1
-        if incorrect_attempts >= 3:
-            messagebox.showerror("Error", "Too many incorrect login attempts. The application will now close.")
-            root.destroy()  # Close the application
-        else:
-            messagebox.showerror("Error", "Invalid credentials. Please try again.")
+        messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
 
-# Create and place labels and entry widgets for username and password
-label_username = tk.Label(root, text="Username:")
-label_username.pack()
+# Set up UI components
+label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
+label_username.pack(pady=10)
 entry_username = tk.Entry(root)
-entry_username.pack()
+entry_username.pack(pady=10, padx=20)
 
-label_password = tk.Label(root, text="Password:")
-label_password.pack()
+label_password = tk.Label(root, text="Password:", bg=BG_COLOR, fg=LABEL_COLOR)
+label_password.pack(pady=10)
 entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
-entry_password.pack()
+entry_password.pack(pady=10, padx=20)
 
-# Create a button to perform login
-login_button = tk.Button(root, text="Login", command=login)
-login_button.pack()
+login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
+login_button.pack(pady=20)
 
 # Start the Tkinter main loop
 root.mainloop()
