@@ -1,3 +1,4 @@
+import subprocess
 from future.moves.tkinter import messagebox
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
@@ -23,7 +24,6 @@ except Exception as e:
     # Handle the error, show a message box, or exit the program.
     exit()
 
-
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
@@ -37,7 +37,7 @@ with open('coco.names', 'r') as f:
 
 # Create a Tkinter window
 root = tk.Tk()
-root.title("AgriDrone Report")
+root.title("AgriDrone Assesment")
 
 
 # Function to update video until connection is established
@@ -72,6 +72,8 @@ except Exception as e:
     print(f"Error loading model: {e}")
     # Handle the error, show a message box, or exit the program.
     exit()
+
+
 # Function to capture and analyze
 def capture_and_analyze():
     try:
@@ -253,6 +255,11 @@ def close_application():
     root.destroy()
 
 
+def open_application():
+    subprocess.Popen(["python", "Report&Analysis.py"])
+    root.destroy()
+
+
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)
 video_button.pack()
@@ -266,6 +273,10 @@ video_label.pack()
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crop", command=capture_and_analyze)
 analyze_button.pack()
+
+report_button = tk.Button(root, command=open_application)
+report_button.pack()
+
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack()
 # Run the Tkinter main loop
