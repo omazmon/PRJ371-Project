@@ -53,8 +53,8 @@ def api_start_recording():
         # Start/stop video recording
         toggle_record()
         return jsonify({"message": "Video recording toggled"}), 200
-    except Exception as e:
-        logger.error(f"Error toggling video recording: {str(e)}")
+    except Exception as E:
+        logger.error(f"Error toggling video recording: {str(E)}")
         return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/capture_image', methods=['POST'])

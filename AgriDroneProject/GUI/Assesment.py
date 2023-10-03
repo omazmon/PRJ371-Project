@@ -1,74 +1,119 @@
 import subprocess
+import threading
 from future.moves.tkinter import messagebox
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
-import cap
 import tkinter as tk
 import cv2
 from tkinter import messagebox
 import numpy as np
 from djitellopy import Tello
 from PIL import Image, ImageTk
-from sklearn.externals import joblib
-import pygame
-import time
 
-
-
-# # Function to handle keyboard input and control the drone
-# def control_drone():
-#     pygame.init()
-#     win = pygame.display.set_mode((400, 400))
-#     pygame.display.set_caption("Tello Drone Control")
-#     run = True
-#
-#     while run:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 run = False
-#
-#         keys = pygame.key.get_pressed()
-#         if keys[pygame.K_LEFT]:
-#             drone.send_control_command(0, -30, 0, 0)  # Move left
-#         if keys[pygame.K_RIGHT]:
-#             drone.send_control_command(0, 30, 0, 0)  # Move right
-#         if keys[pygame.K_UP]:
-#             drone.send_control_command(0, 0, 30, 0)  # Move up
-#         if keys[pygame.K_DOWN]:
-#             drone.send_control_command(0, 0, -30, 0)  # Move down
-#         if keys[pygame.K_w]:
-#             drone.send_control_command(0, 0, 0, 30)  # Rotate clockwise
-#         if keys[pygame.K_s]:
-#             drone.send_control_command(0, 0, 0, -30)  # Rotate counterclockwise
-#         if keys[pygame.K_SPACE]:
-#             drone.takeoff()  # Takeoff
-#         if keys[pygame.K_l]:
-#             drone.land()  # Land
-#
-#         # Limit the control commands to avoid overwhelming the drone
-#         time.sleep(0.1)
-#
-#     pygame.quit()
-
-
-
-# Create a Tkinter window
-root = tk.Tk()
-root.title("AgriDrone Assesment")
 
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
 drone.streamon()
 
+
+# Function to handle keyboard input and control the drone
+def control_drone():
+    drone.takeoff()  # Takeoff when the application starts
+
+
+def on_key_release(event):
+    drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+
+
+def on_key_press(event):
+    key = event.char
+    if key == 'w':
+        drone.send_rc_control(0, 0, 30, 0)  # Move up when 'w' is pressed
+    elif key == 's':
+        drone.send_rc_control(0, 0, -30, 0)  # Move down when 's' is pressed
+    elif key == 'a':
+        drone.send_rc_control(0, -30, 0, 0)  # Move left when 'a' is pressed
+    elif key == 'd':
+        drone.send_rc_control(0, 30, 0, 0)  # Move right when 'd' is pressed
+    elif key == 'q':
+        drone.send_rc_control(0, 0, 0, -30)  # Rotate counterclockwise when 'q' is pressed
+    elif key == 'e':
+        drone.send_rc_control(0, 0, 0, 30)  # Rotate clockwise when 'e' is pressed
+    elif key == 'l':
+        drone.land()  # Land when spacebar is pressed
+
+
+# Function to control the drone
+def drone_control_thread():
+    control_drone()
+
+
+# Function to update video until connection is established
+def update_video_thread():
+    while True:
+        update_video()
+
+
+# Create a Tkinter window
+root = tk.Tk()
+root.title("AgriDrone Assesment")
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+
+root.bind("<KeyPress>", on_key_press)
+root.bind("<KeyRelease>", on_key_release)
+
+# Define color codes and their corresponding transparency values
+color_transparency = {
+    (0, 0, 255): 250,  # Blue (high rate)
+    (0, 255, 255): 200,  # Yellow (medium rate)
+    (0, 255, 0): 150,  # Green (medium rate)
+    (0, 165, 255): 100,  # Orange (low rate)
+    (128, 0, 128): 0  # Purple (no data)
+}
+
+
+# Function to receive and process NDVI map image
+def receive_ndvi_map():
+    while True:
+        frame = drone.get_frame_read().frame
+
+        # Process the frame (assuming the NDVI map is in a specific region of the frame)
+        ndvi_map = frame[30:30, 30:30]
+
+        # Apply transparency based on color codes
+        for i in range(ndvi_map.shape[0]):
+            for j in range(ndvi_map.shape[1]):
+                pixel_color = tuple(ndvi_map[i, j])
+                if pixel_color in color_transparency:
+                    alpha = color_transparency[pixel_color]
+                    ndvi_map[i, j] = (ndvi_map[i, j][0], ndvi_map[i, j][1], ndvi_map[i, j][2], alpha)
+
+        # Create a transparent PNG image
+        output_image = np.zeros((ndvi_map.shape[0], ndvi_map.shape[1], 4), dtype=np.uint8)
+        output_image[:, :, :3] = ndvi_map
+        output_image[:, :, 3] = 255  # Set alpha channel to 255 for non-transparent pixels
+
+        # Save the output image with transparency (optional)
+        cv2.imwrite('output_transparent_ndvi_map.png', output_image)
+
+        # Display the output image (optional)
+        cv2.imshow('Transparent NDVI Map', output_image)
+
+        # Break the loop and close windows if 'q' key is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release resources and destroy windows
+    drone.streamoff()
+    cv2.destroyAllWindows()
+
+
 # # Load YOLO model and class labels
 # net = cv2.dnn.readNet('yolov3.weights', 'yolov3.cfg')
 #
 # with open('coco.names', 'r') as f:
 #     classes = f.read().strip().split('\n')
-
-drone.takeoff()
-
 
 # Function to update video until connection is established
 def update_video():
@@ -90,6 +135,29 @@ def update_video():
     except Exception as E:
         print(f"Error in update_video: {E}")
         messagebox.showerror("Error", f"Error in update_video: {E}")
+        # Function to identify pests or diseases
+
+
+def identify_pests_or_diseases(image):
+    green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
+    threshold = 100  # Adjust this threshold as needed
+    pests_detected = np.where(green_channel < threshold, 1, 0)
+    return pests_detected
+
+
+# Function to identify soil type from color
+def get_soil_type(color):
+    soil_colors = {
+        (255, 0, 0): 'coarser texture, darker colored soil',
+        (0, 255, 255): 'coarser texture, lighter colored soil',
+        (0, 255, 0): 'nominal',
+        (0, 140, 255): 'finer texture, darker colored soil',
+        (128, 0, 128): 'finer texture, lighter colored soil'
+    }
+    for key in soil_colors.keys():
+        if np.array_equal(color, np.array(key)):
+            return soil_colors[key]
+    return None
 
 
 def capture_and_analyze():
@@ -98,12 +166,12 @@ def capture_and_analyze():
 
         # crop_condition = predict_crop_condition(frame)
         # ndvi_result = calculate_ndvi(frame)
-        # pests_or_diseases_result = identify_pests_or_diseases(frame)
+        pests_or_diseases_result = identify_pests_or_diseases(frame)
         # object_detected_frame = identify_objects(frame)
 
         cv2.imshow("Original Image", frame)
-        # cv2.imshow("NDVI", ndvi_result)
-        # cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
+        cv2.imshow("NDVI", receive_ndvi_map())
+        cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
         # cv2.imshow("Object Detection", object_detected_frame)
         #
         # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
@@ -324,6 +392,19 @@ report_button.pack()
 
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack()
+# Create threads for controlling the drone and updating the video
+drone_thread = threading.Thread(target=drone_control_thread)
+video_thread = threading.Thread(target=update_video_thread)
+
+# Start both threads
+drone_thread.start()
+video_thread.start()
+
+business_name_label = tk.Label(root, text="Agridrone", font=("Times New Roman", 24, "bold"), bg="#FFFFFF")
+business_name_label.pack(pady=20)
+
+slogan_label = tk.Label(root, text="Optimal Farming Solutions", font=("Times New Roman", 14, "italic underline"), bg="#FFFFFF")
+slogan_label.pack(pady=10)
 # Run the Tkinter main loop
 root.mainloop()
-
+control_drone()

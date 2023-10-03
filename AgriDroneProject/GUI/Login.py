@@ -2,19 +2,26 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
+from PIL import Image, ImageTk
 
 # Create the main application window
 root = tk.Tk()
 root.title("Login Form")
 
 # Set a consistent color scheme
-BG_COLOR = "#f2f2f2"
+BG_COLOR = "#C0C0C0"
 LABEL_COLOR = "#333333"
 BUTTON_COLOR = "#4CAF50"
+# Load the background image
+background_image = Image.open("background-image.jpg")
+background_photo = ImageTk.PhotoImage(background_image)
+
+# Create a label to display the background image
+background_label = tk.Label(root, image=background_photo)
+background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
 # Set the window size to a fixed size for better appearance
-root.geometry("400x300")
-root.configure(bg=BG_COLOR)
+root.geometry("270x250")
 
 
 # Function to open the Application.py
@@ -53,8 +60,6 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
-
-# Set up UI components
 label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
 label_username.pack(pady=10)
 entry_username = tk.Entry(root)
@@ -68,5 +73,5 @@ entry_password.pack(pady=10, padx=20)
 login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
 login_button.pack(pady=20)
 
-# Start the Tkinter main loop
+
 root.mainloop()
