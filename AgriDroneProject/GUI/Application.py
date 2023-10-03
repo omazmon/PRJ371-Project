@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import pyodbc
 from PIL import Image, ImageTk
-
+from djitellopy.tello import *
 # Create a Tkinter window
 root = tk.Tk()
 root.title("AgriDrone Application")
@@ -40,6 +40,10 @@ crop_combobox.set("Select Crop Type")
 crop_label.pack()
 crop_combobox.pack()
 
+drone = Tello()
+drone.connect()
+drone.streamon()
+
 # Create a connection to the database
 conn_str = (
     r'DRIVER={SQL Server Native Client 11.0};'
@@ -75,7 +79,8 @@ def open_dronedata():
     if selected_province != "Please select province" and farm_name and selected_crop:
         # You can use selected_province, farm_name, and selected_crop here for further processing
         subprocess.Popen(["python", "Assesment.py"])
-        root.destroy()
+        drone.takeoff()
+        print(drone.get_current_state())
     else:
         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
 

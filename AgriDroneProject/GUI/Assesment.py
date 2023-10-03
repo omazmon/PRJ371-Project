@@ -11,18 +11,9 @@ from djitellopy import Tello
 from PIL import Image, ImageTk
 from sklearn.externals import joblib
 
-try:
-    features = np.load('features.npy')
-    labels = np.load('labels.npy')
-    ndvi_map = cv2.imread('path_to_ndvi_map_image.jpg')
-    crop_condition_clf = SVC(kernel='linear', C=1)
-    crop_condition_clf.load("your_crop_condition_model_path")
-    crop_condition_label_encoder = LabelEncoder()
-    crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)
-except Exception as e:
-    print(f"Error loading data: {e}")
-    # Handle the error, show a message box, or exit the program.
-    exit()
+# Create a Tkinter window
+root = tk.Tk()
+root.title("AgriDrone Assesment")
 
 # Initialize the Tello drone
 drone = Tello()
@@ -34,10 +25,6 @@ net = cv2.dnn.readNet('yolov3.weights', 'yolov3.cfg')
 
 with open('coco.names', 'r') as f:
     classes = f.read().strip().split('\n')
-
-# Create a Tkinter window
-root = tk.Tk()
-root.title("AgriDrone Assesment")
 
 
 # Function to update video until connection is established
@@ -97,6 +84,20 @@ def capture_and_analyze():
     except Exception as E:
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
+
+
+try:
+    features = np.load('features.npy')
+    labels = np.load('labels.npy')
+    ndvi_map = cv2.imread('path_to_ndvi_map_image.jpg')
+    crop_condition_clf = SVC(kernel='linear', C=1)
+    crop_condition_clf.load("your_crop_condition_model_path")
+    crop_condition_label_encoder = LabelEncoder()
+    crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)
+except Exception as e:
+    print(f"Error loading data: {e}")
+    # Handle the error, show a message box, or exit the program.
+    exit()
 
 
 # Function to identify and label objects
