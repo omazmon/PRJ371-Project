@@ -66,6 +66,7 @@ try:
     farm_name_combobox.set("Select Farm Name")
     farm_name_combobox.pack()
 except Exception as e:
+    print(f"Error: {e}")
     messagebox.showerror("Error", f"Failed to connect to the database: {e}")
 
 

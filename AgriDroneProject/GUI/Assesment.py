@@ -1,8 +1,6 @@
 import subprocess
 import threading
 from future.moves.tkinter import messagebox
-from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC
 import tkinter as tk
 import cv2
 from tkinter import messagebox
@@ -15,10 +13,25 @@ drone = Tello()
 drone.connect()
 drone.streamon()
 
+# Define the minimum allowed distance to objects in centimeters
+MIN_DISTANCE = 30
 # Function to handle keyboard input and control the drone
 def control_drone():
     drone.takeoff()
     drone.set_speed(50)
+    # Loop for controlling the drone
+    while True:
+        # Get distance information from the drone's sensors (assuming the function is available)
+        distance = drone.get_distance_tof()
+        # Check if the distance to the object is less than the minimum allowed distance
+        if distance < MIN_DISTANCE:
+            # If the object is too close, hover in place and do not move forward
+            drone.send_rc_control(0, 0, 0, 0)
+        else:
+            # If the object is at a safe distance, you can send movement commands as before
+            # Example: Move forward with a speed of 30
+            drone.send_rc_control(0, 30, 0, 0)
+
 
 def on_key_release():
     drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
@@ -45,6 +58,7 @@ def on_key_press(event):
 # Function to control the drone
 def drone_control_thread():
     control_drone()
+
 
 # Function to update video until connection is established
 def update_video_thread():
@@ -105,6 +119,7 @@ def receive_ndvi_map():
     drone.streamoff()
     cv2.destroyAllWindows()
 
+
 # Function to update video until connection is established
 def update_video():
     try:
@@ -149,21 +164,28 @@ def get_soil_type(color):
             return soil_colors[key]
     return None
 
+
 def capture_and_analyze():
     try:
         frame = drone.get_frame_read().frame
 
-        # crop_condition = predict_crop_condition(frame)
-        # ndvi_result = calculate_ndvi(frame)
-        pests_or_diseases_result = identify_pests_or_diseases(frame)
-        # object_detected_frame = identify_objects(frame)
+        # Calculate NDVI
+        ndvi_map = calculate_ndvi(frame)
 
-        cv2.imshow("Original Image", frame)
-        cv2.imshow("NDVI", receive_ndvi_map())
+        # Detect pests or diseases
+        pests_or_diseases_result = identify_pests_or_diseases(frame)
+
+        # Analyze crop health
+        crop_health = analyze_crop_health(ndvi_map)
+
+        # Display NDVI map
+        cv2.imshow("NDVI Map", ndvi_map)
+
+        # Display pests or diseases detection result
         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-        # cv2.imshow("Object Detection", object_detected_frame)
-        #
-        # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+
+        # Provide feedback to the user
+        analysis_label.config(text=f"Analysis: Crop Health - {crop_health}")
 
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -172,6 +194,56 @@ def capture_and_analyze():
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
+
+def calculate_ndvi(frame):
+    # Extract the Red and NIR bands from the frame (assuming specific channels)
+    red_band = frame[:, :, 2]
+    nir_band = frame[:, :, 3]
+
+    # Calculate NDVI
+    ndvi_map = (nir_band - red_band) / (nir_band + red_band)
+    ndvi_map = np.nan_to_num(ndvi_map)  # Handle potential division by zero issues
+
+    # Apply a colormap for visualization (optional)
+    ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
+
+    return ndvi_visualized
+
+
+def analyze_crop_health(ndvi_map):
+    average_ndvi = np.mean(ndvi_map)
+
+    if average_ndvi >= 0.8:
+        return "Healthy"
+    elif 0.5 <= average_ndvi < 0.8:
+        return "Moderate Stress"
+    else:
+        return "Severe Stress"
+
+
+# def capture_and_analyze():
+#     try:
+#         frame = drone.get_frame_read().frame
+#
+#         # crop_condition = predict_crop_condition(frame)
+#         # ndvi_result = calculate_ndvi(frame)
+#         pests_or_diseases_result = identify_pests_or_diseases(frame)
+#         # object_detected_frame = identify_objects(frame)
+#
+#         cv2.imshow("Original Image", frame)
+#         cv2.imshow("NDVI", receive_ndvi_map())
+#         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
+#         # cv2.imshow("Object Detection", object_detected_frame)
+#         #
+#         # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+#
+#         cv2.waitKey(0)
+#         cv2.destroyAllWindows()
+#
+#     except Exception as E:
+#         print(f"Error in capture_and_analyze: {E}")
+#         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
+#
 
 # Function to process each frame
 def process_frame(frame):
@@ -191,9 +263,11 @@ def process_frame(frame):
 
     return frame
 
+
 def close_application():
     messagebox.showinfo("Goodbye", "LogOut successful!")
     root.destroy()
+
 
 def open_application():
     subprocess.Popen(["python", "Report&Analysis.py"])
@@ -227,12 +301,5 @@ video_thread = threading.Thread(target=update_video_thread)
 drone_thread.start()
 video_thread.start()
 
-business_name_label = tk.Label(root, text="Agridrone", font=("Times New Roman", 24, "bold"), bg="#FFFFFF")
-business_name_label.pack(pady=20)
-
-slogan_label = tk.Label(root, text="Optimal Farming Solutions", font=("Times New Roman", 14, "italic underline"),
-                        bg="#FFFFFF")
-slogan_label.pack(pady=10)
-# Run the Tkinter main loop
 root.mainloop()
 control_drone()
