@@ -11,26 +11,12 @@ from PIL import Image, ImageTk
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
+drone.takeoff()
+drone.set_speed(30)
 drone.streamon()
 
-# Define the minimum allowed distance to objects in centimeters
-MIN_DISTANCE = 30
-# Function to handle keyboard input and control the drone
-def control_drone():
-    drone.takeoff()
-    drone.set_speed(50)
-    # Loop for controlling the drone
-    while True:
-        # Get distance information from the drone's sensors (assuming the function is available)
-        distance = drone.get_distance_tof()
-        # Check if the distance to the object is less than the minimum allowed distance
-        if distance < MIN_DISTANCE:
-            # If the object is too close, hover in place and do not move forward
-            drone.send_rc_control(0, 0, 0, 0)
-        else:
-            # If the object is at a safe distance, you can send movement commands as before
-            # Example: Move forward with a speed of 30
-            drone.send_rc_control(0, 30, 0, 0)
+# Initialize the Haar cascade for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
 def on_key_release():
@@ -39,20 +25,31 @@ def on_key_release():
 
 def on_key_press(event):
     key = event.char
+
+    print(drone.get_battery())
+
     if key == 'w':
-        drone.send_rc_control(0, 0, 30, 0)  # Move up when 'w' is pressed
+        drone.send_rc_control(0, 0, 35, 0)  # Move up when 'w' is pressed
     elif key == 's':
-        drone.send_rc_control(0, 0, -30, 0)  # Move down when 's' is pressed
+        drone.send_rc_control(0, 0, -35, 0)  # Move down when 's' is pressed
+    elif key == 'z':
+        drone.flip_forward()
     elif key == 'a':
-        drone.send_rc_control(0, -30, 0, 5)  # Move left when 'a' is pressed
+        drone.send_rc_control(0, -35, 0, 0)  # Move left when 'a' is pressed
     elif key == 'd':
-        drone.send_rc_control(0, 30, 0, 5)  # Move right when 'd' is pressed
+        drone.send_rc_control(0, 35, 0, 0)  # Move right when 'd' is pressed
     elif key == 'q':
-        drone.send_rc_control(0, 0, 0, -30)  # Rotate counterclockwise when 'q' is pressed
+        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
     elif key == 'e':
-        drone.send_rc_control(0, 0, 0, 30)  # Rotate clockwise when 'e' is pressed
-    elif key == ' ':
+        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'e' is pressed
+    elif key == 't':
+        drone.takeoff()
+    elif key == '0':
+        drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+    elif key == 'l':
         drone.land()  # Land when spacebar is pressed
+    elif key == 'p':
+        drone.send_rc_control(0, 50, 0, 0)  # Stop the drone when a key is released
 
 
 # Function to control the drone
@@ -115,32 +112,23 @@ def receive_ndvi_map():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # Release resources and destroy windows
-    drone.streamoff()
-    cv2.destroyAllWindows()
-
 
 # Function to update video until connection is established
 def update_video():
-    try:
-        frame = drone.get_frame_read().frame  # Get frame from the drone's camera
+    frame = drone.get_frame_read().frame  # Get frame from the drone's camera
 
-        # Process the frame
-        processed_frame = process_frame(frame)
+    # Process the frame
+    processed_frame = process_frame(frame)
 
-        # Convert the processed frame to a format compatible with Tkinter
-        img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(image=img)
+    # Convert the processed frame to a format compatible with Tkinter
+    img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(img)
+    img = ImageTk.PhotoImage(image=img)
 
-        # Update the label with the new frame
-        video_label.img = img
-        video_label.config(image=img)
-        root.after(10, update_video)
-    except Exception as E:
-        print(f"Error in update_video: {E}")
-        messagebox.showerror("Error", f"Error in update_video: {E}")
-        # Function to identify pests or diseases
+    # Update the label with the new frame
+    video_label.img = img
+    video_label.config(image=img)
+    root.after(3, update_video)
 
 
 def identify_pests_or_diseases(image):
@@ -148,6 +136,24 @@ def identify_pests_or_diseases(image):
     threshold = 100  # Adjust this threshold as needed
     pests_detected = np.where(green_channel < threshold, 1, 0)
     return pests_detected
+
+
+def start_ndvi_stream():
+    # Function to update video with NDVI frames
+    def update_ndvi_video():
+        frame = drone.get_frame_read().frame
+        processed_frame = process_frame(frame)
+
+        # Calculate and visualize NDVI
+        ndvi_image = calculate_and_visualize_ndvi(processed_frame)
+
+        # Update the label with the new NDVI image
+        video_label.img = ndvi_image
+        video_label.config(image=ndvi_image)
+        root.after(3, update_ndvi_video)
+
+    # Start updating the video with NDVI frames
+    update_ndvi_video()
 
 
 # Function to identify soil type from color
@@ -165,48 +171,60 @@ def get_soil_type(color):
     return None
 
 
-def capture_and_analyze():
-    try:
-        frame = drone.get_frame_read().frame
+#
+# def capture_and_analyze():
+#     try:
+#         frame = drone.get_frame_read().frame
+#
+#         # Calculate NDVI
+#         ndvi_map = calculate_ndvi(frame)
+#
+#         # Detect pests or diseases
+#         pests_or_diseases_result = identify_pests_or_diseases(frame)
+#
+#         # Analyze crop health
+#         crop_health = analyze_crop_health(ndvi_map)
+#
+#         # Display NDVI map
+#         cv2.imshow("NDVI Map", ndvi_map)
+#
+#         # Display pests or diseases detection result
+#         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
+#
+#         # Provide feedback to the user
+#         analysis_label.config(text=f"Analysis: Crop Health - {crop_health}")
+#
+#         cv2.waitKey(0)
+#         cv2.destroyAllWindows()
+#
+#     except Exception as E:
+#         print(f"Error in capture_and_analyze: {E}")
+#         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
-        # Calculate NDVI
-        ndvi_map = calculate_ndvi(frame)
 
-        # Detect pests or diseases
-        pests_or_diseases_result = identify_pests_or_diseases(frame)
-
-        # Analyze crop health
-        crop_health = analyze_crop_health(ndvi_map)
-
-        # Display NDVI map
-        cv2.imshow("NDVI Map", ndvi_map)
-
-        # Display pests or diseases detection result
-        cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-
-        # Provide feedback to the user
-        analysis_label.config(text=f"Analysis: Crop Health - {crop_health}")
-
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    except Exception as E:
-        print(f"Error in capture_and_analyze: {E}")
-        messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
-
-
-def calculate_ndvi(frame):
-    # Extract the Red and NIR bands from the frame (assuming specific channels)
-    red_band = frame[:, :, 2]
-    nir_band = frame[:, :, 3]
+def calculate_and_visualize_ndvi(frame):
+    red_band = frame[:, :, 1]
+    nir_band = frame[:, :, 2]
 
     # Calculate NDVI
     ndvi_map = (nir_band - red_band) / (nir_band + red_band)
     ndvi_map = np.nan_to_num(ndvi_map)  # Handle potential division by zero issues
 
-    # Apply a colormap for visualization (optional)
+    # Apply a colormap for visualization (Jet colormap in this case)
     ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
 
+    # Convert to RGB format for PIL and Tkinter compatibility
+    ndvi_visualized_rgb = cv2.cvtColor(ndvi_visualized, cv2.COLOR_BGR2RGB)
+
+    # Convert to ImageTk format
+    img = Image.fromarray(ndvi_visualized_rgb)
+    img_tk = ImageTk.PhotoImage(image=img)
+
+    return img_tk
+
+
+def visualize_ndvi(ndvi_map):
+    ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
     return ndvi_visualized
 
 
@@ -221,45 +239,57 @@ def analyze_crop_health(ndvi_map):
         return "Severe Stress"
 
 
-# def capture_and_analyze():
-#     try:
-#         frame = drone.get_frame_read().frame
-#
-#         # crop_condition = predict_crop_condition(frame)
-#         # ndvi_result = calculate_ndvi(frame)
-#         pests_or_diseases_result = identify_pests_or_diseases(frame)
-#         # object_detected_frame = identify_objects(frame)
-#
-#         cv2.imshow("Original Image", frame)
-#         cv2.imshow("NDVI", receive_ndvi_map())
-#         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-#         # cv2.imshow("Object Detection", object_detected_frame)
-#         #
-#         # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
-#
-#         cv2.waitKey(0)
-#         cv2.destroyAllWindows()
-#
-#     except Exception as E:
-#         print(f"Error in capture_and_analyze: {E}")
-#         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
-#
+def capture_and_analyze():
+    try:
+        frame = drone.get_frame_read().frame
 
-# Function to process each frame
+        # crop_condition = predict_crop_condition(frame)
+        # ndvi_result = calculate_ndvi(frame)
+        pests_or_diseases_result = identify_pests_or_diseases(frame)
+        # object_detected_frame = identify_objects(frame)
+
+        cv2.imshow("Original Image", frame)
+        cv2.imshow("NDVI", receive_ndvi_map())
+        cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
+        # cv2.imshow("Object Detection", object_detected_frame)
+        #
+        # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+    except Exception as E:
+        print(f"Error in capture_and_analyze: {E}")
+        messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
+
+
 def process_frame(frame):
-    # Convert the frame to grayscale for simpler processing
+    # Convert the frame to grayscale for face detection
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # Example: Detect edges using Canny edge detection
-    edges = cv2.Canny(gray, 50, 150)
+    # Detect faces using Haar cascade
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    for (x, y, w, h) in faces:
+        cv2.circle(frame, (x + w // 2, y + h // 2), min(w, h) // 2, (0, 255, 0),
+                   2)  # Draw a green circle around the face
 
-    # Example: Find contours in the image
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Convert the frame to HSV for color-based object detection (e.g., cars)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Example: Draw bounding boxes around detected issues
+    # Define lower and upper bounds for the blue color (for cars)
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([140, 255, 255])
+
+    # Threshold the HSV image to get only blue colors
+    blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    # Find contours in the blue mask
+    contours, _ = cv2.findContours(blue_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Draw blue rectangles around objects detected as cars
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)  # Red rectangle
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Draw a blue rectangle around the object
 
     return frame
 
@@ -277,6 +307,11 @@ def open_application():
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)
 video_button.pack()
+
+# Create a button to trigger the NDVI stream
+ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)
+ndvi_button.pack()
+
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
 analysis_label.pack()
@@ -293,13 +328,13 @@ report_button.pack()
 
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack()
+root.mainloop()
 # Create threads for controlling the drone and updating the video
-drone_thread = threading.Thread(target=drone_control_thread)
 video_thread = threading.Thread(target=update_video_thread)
+drone_thread = threading.Thread(target=drone_control_thread)
 
 # Start both threads
-drone_thread.start()
 video_thread.start()
+drone_thread.start()
 
-root.mainloop()
-control_drone()
+control_drone(0)
