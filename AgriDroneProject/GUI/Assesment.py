@@ -19,10 +19,11 @@ drone.streamon()
 
 # Function to handle keyboard input and control the drone
 def control_drone():
-    drone.takeoff()  # Takeoff when the application starts
+    drone.takeoff()
+    drone.set_speed(50)
 
 
-def on_key_release(event):
+def on_key_release():
     drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
 
 
@@ -33,14 +34,14 @@ def on_key_press(event):
     elif key == 's':
         drone.send_rc_control(0, 0, -30, 0)  # Move down when 's' is pressed
     elif key == 'a':
-        drone.send_rc_control(0, -30, 0, 0)  # Move left when 'a' is pressed
+        drone.send_rc_control(0, -30, 0, 5)  # Move left when 'a' is pressed
     elif key == 'd':
-        drone.send_rc_control(0, 30, 0, 0)  # Move right when 'd' is pressed
+        drone.send_rc_control(0, 30, 0, 5)  # Move right when 'd' is pressed
     elif key == 'q':
         drone.send_rc_control(0, 0, 0, -30)  # Rotate counterclockwise when 'q' is pressed
     elif key == 'e':
         drone.send_rc_control(0, 0, 0, 30)  # Rotate clockwise when 'e' is pressed
-    elif key == 'l':
+    elif key == ' ':
         drone.land()  # Land when spacebar is pressed
 
 
@@ -403,7 +404,8 @@ video_thread.start()
 business_name_label = tk.Label(root, text="Agridrone", font=("Times New Roman", 24, "bold"), bg="#FFFFFF")
 business_name_label.pack(pady=20)
 
-slogan_label = tk.Label(root, text="Optimal Farming Solutions", font=("Times New Roman", 14, "italic underline"), bg="#FFFFFF")
+slogan_label = tk.Label(root, text="Optimal Farming Solutions", font=("Times New Roman", 14, "italic underline"),
+                        bg="#FFFFFF")
 slogan_label.pack(pady=10)
 # Run the Tkinter main loop
 root.mainloop()
