@@ -11,6 +11,7 @@ from PIL import Image, ImageTk
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
+drone.streamon()
 
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -118,8 +119,8 @@ def receive_ndvi_map():
         # Display the output image (optional)
         cv2.imshow('Transparent NDVI Map', output_image)
 
-        # Break the loop and close windows if 'q' key is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        # Break the loop and close windows if 'f' key is pressed
+        if cv2.waitKey(1) & 0xFF == ord('f'):
             break
 
 
@@ -127,30 +128,35 @@ def on_key_release():
     drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
 
 
+def take_off():
+    drone.takeoff()
+    drone.set_speed(35)
+
+
 def on_key_press(event):
     key = event.char
 
     print(drone.get_battery())
 
-    if key == 'w':
-        drone.send_rc_control(0, 0, 35, 0)  # Move up when 'w' is pressed
-    elif key == 's':
-        drone.send_rc_control(0, 0, -35, 0)  # Move down when 's' is pressed
+    if key == 'Up':
+        drone.send_rc_control(0, 0, 35, 0)  # Move up when
+    elif key == 'Down':
+        drone.send_rc_control(0, 0, -35, 0)  # Move down when
     elif key == 'z':
         drone.flip_forward()
-    elif key == 'a':
-        drone.send_rc_control(0, -35, 0, 0)  # Move left when 'a' is pressed
-    elif key == 'd':
-        drone.send_rc_control(0, 35, 0, 0)  # Move right when 'd' is pressed
+    elif key == 'Left':
+        drone.send_rc_control(0, -35, 0, 0)
+    elif key == 'Right':
+        drone.send_rc_control(0, 35, 0, 0)
     elif key == 'q':
         drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
-    elif key == 'e':
-        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'e' is pressed
+    elif key == 'w':
+        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
     elif key == 't':
-        drone.takeoff()
+        take_off()
     elif key == 'z':
         drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
-    elif key == 'l':
+    elif key == 'space':
         drone.land()  # Land when spacebar is pressed
 
 
@@ -162,13 +168,6 @@ color_transparency = {
     (0, 165, 255): 100,  # Orange (low rate)
     (128, 0, 128): 0  # Purple (no data)
 }
-
-
-def take_off():
-    drone.takeoff()
-    drone.set_speed(30)
-    drone.streamon()
-
 
 # Create a Tkinter window
 root = tk.Tk()
@@ -299,6 +298,48 @@ def capture_and_analyze():
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
+
+# top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
+# crop_colors = {
+#     "Maize": (0, 255, 0),  # Green color for Maize
+#     "Sugarcane": (0, 0, 255),  # Red color for Sugarcane
+#     "Wheat": (255, 0, 0),  # Blue color for Wheat
+#     "Sunflower": (0, 255, 255),  # Yellow color for Sunflower
+#     "Citrus": (255, 255, 0)  # Cyan color for Citrus
+# }
+# def process_frame(frame):
+#     # Convert the frame to HSV for color-based segmentation
+#     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+#
+#     # Define the lower and upper bounds for each crop color (you need to adjust these values)
+#     lower_boundaries = {
+#         "Maize": np.array([35, 100, 100]),
+#         "Sugarcane": np.array([0, 100, 100]),
+#         "Wheat": np.array([20, 100, 100]),
+#         "Sunflower": np.array([15, 100, 100]),
+#         "Citrus": np.array([25, 100, 100])
+#     }
+#     upper_boundaries = {
+#         "Maize": np.array([90, 255, 255]),
+#         "Sugarcane": np.array([10, 255, 255]),
+#         "Wheat": np.array([40, 255, 255]),
+#         "Sunflower": np.array([30, 255, 255]),
+#         "Citrus": np.array([35, 255, 255])
+#     }
+#
+#     # Initialize an empty list to store detected crops
+#     detected_crops = []
+#
+#     # Detect crops and draw rectangles around them
+#     for crop, (lower, upper) in zip(top_crops, zip(lower_boundaries.values(), upper_boundaries.values())):
+#         mask = cv2.inRange(hsv, lower, upper)
+#         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#         for contour in contours:
+#             x, y, w, h = cv2.boundingRect(contour)
+#             cv2.rectangle(frame, (x, y), (x + w, y + h), crop_colors[crop], 2)
+#             detected_crops.append(crop)
+#
+#     return frame, detected_crops
 
 def process_frame(frame):
     # Convert the frame to grayscale  detection
