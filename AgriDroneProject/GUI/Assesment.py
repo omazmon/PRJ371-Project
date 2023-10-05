@@ -301,9 +301,19 @@ def capture_and_analyze():
 
 
 def process_frame(frame):
-    # Convert the frame to grayscale for face detection
+    # Convert the frame to grayscale  detection
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    # Example: Detect edges using Canny edge detection
+    edges = cv2.Canny(gray, 50, 150)
+
+    # Example: Find contours in the image
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Example: Draw bounding boxes around detected issues
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)  # Red rectangle
     # Detect faces using Haar cascade
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     for (x, y, w, h) in faces:

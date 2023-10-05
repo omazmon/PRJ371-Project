@@ -103,6 +103,6 @@ crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_appl
 crop_assessment_button.pack()
 
 copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=("Times New Roman", 14, "bold italic"))
+                            font=("Times New Roman", 14, "bold italic"))
 # Start the GUI main loop
 root.mainloop()
