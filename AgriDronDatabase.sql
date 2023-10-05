@@ -64,18 +64,6 @@ CREATE TABLE Technicians (
 );
 GO
 
--- Create the IrrigationSchedule table
-CREATE TABLE IrrigationSchedule (
-    ScheduleID INT PRIMARY KEY,
-    FieldID INT,
-    CropID INT,
-    Date DATE NOT NULL,
-    AmountToIrrigate DECIMAL(5, 2) NOT NULL,
-    FOREIGN KEY (FieldID) REFERENCES CropHealthData(Field_ID),
-    FOREIGN KEY (CropID) REFERENCES Crops(CropID)
-);
-GO
-
 -- Create the PestControlData table
 CREATE TABLE PestControlData (
     PestID INT PRIMARY KEY,
@@ -113,27 +101,6 @@ CREATE TABLE Image (
     Sensor_Type VARCHAR(50),
     Datetime DATETIME,
     FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
-);
-GO
-
--- Create the Orthomosaic table
-CREATE TABLE Orthomosaic (
-    Orthomosaic_ID INT PRIMARY KEY,
-    Flight_ID INT,
-    Mosaic_File_Path VARCHAR(255),
-    Processing_Date DATE,
-    FOREIGN KEY (Flight_ID) REFERENCES FlightLog(Flight_ID)
-);
-GO
-
--- Create the ElevationData table
-CREATE TABLE ElevationData (
-    Elevation_ID INT PRIMARY KEY,
-    Field_ID INT,
-    Image_ID INT,
-    Elevation_Values TEXT,
-    FOREIGN KEY (Field_ID) REFERENCES CropHealthData(Field_ID),
-    FOREIGN KEY (Image_ID) REFERENCES Image(Image_ID)
 );
 GO
 
@@ -194,14 +161,7 @@ VALUES
     (4, 'Technician 4', '444-444-4444'),
     (5, 'Technician 5', '555-555-5555');
 
--- Insert data into the IrrigationSchedule table
-INSERT INTO IrrigationSchedule (ScheduleID, FieldID, CropID, Date, AmountToIrrigate)
-VALUES
-    (1, 1, 1, '2023-05-12', 25.5),
-    (2, 2, 2, '2023-05-14', 30.0),
-    (3, 3, 3, '2023-05-16', 22.8),
-    (4, 4, 4, '2023-05-18', 28.3),
-    (5, 5, 5, '2023-05-20', 35.7);
+
 
 -- Insert data into the PestControlData table
 INSERT INTO PestControlData (PestID, Datetime, Image, Coordinates, TemperatureDetected, Object)
@@ -229,24 +189,6 @@ VALUES
     (3, 3, 'image3.jpg', '2023-05-14', 'RGB', '2023-05-14 09:30:00'),
     (4, 4, 'image4.jpg', '2023-05-16', 'RGB', '2023-05-16 14:00:00'),
     (5, 5, 'image5.jpg', '2023-05-18', 'RGB', '2023-05-18 12:45:00');
-
--- Insert data into the Orthomosaic table
-INSERT INTO Orthomosaic (Orthomosaic_ID, Flight_ID, Mosaic_File_Path, Processing_Date)
-VALUES
-    (1, 1, 'mosaic1.jpg', '2023-05-10'),
-    (2, 2, 'mosaic2.jpg', '2023-05-12'),
-    (3, 3, 'mosaic3.jpg', '2023-05-14'),
-    (4, 4, 'mosaic4.jpg', '2023-05-16'),
-    (5, 5, 'mosaic5.jpg', '2023-05-18');
-
--- Insert data into the ElevationData table
-INSERT INTO ElevationData (Elevation_ID, Field_ID, Image_ID, Elevation_Values)
-VALUES
-    (1, 1, 1, 'Elevation data for Field 1, Image 1'),
-    (2, 2, 2, 'Elevation data for Field 2, Image 2'),
-    (3, 3, 3, 'Elevation data for Field 3, Image 3'),
-    (4, 4, 4, 'Elevation data for Field 4, Image 4'),
-    (5, 5, 5, 'Elevation data for Field 5, Image 5');
 
 -- Insert data into the Users table
 INSERT INTO Users (User_ID, First_Name, Last_Name, Username, Password, Role)

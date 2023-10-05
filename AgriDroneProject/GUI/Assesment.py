@@ -11,74 +11,84 @@ from PIL import Image, ImageTk
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
-drone.takeoff()
-drone.set_speed(30)
-drone.streamon()
 
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
+# Load YOLO
+net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-def on_key_release():
-    drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+
+def create_report(crop_health):
+    with open('crop_health_report.txt', 'a') as file:
+        file.write(f'Crop Health: {crop_health}\n')
 
 
-def on_key_press(event):
-    key = event.char
+# Function for object detection
+def identify_objects_yolo(frame):
+    height, width, channels = frame.shape
 
-    print(drone.get_battery())
+    # Detecting objects
+    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+    net.setInput(blob)
+    outs = net.forward(output_layers)
 
-    if key == 'w':
-        drone.send_rc_control(0, 0, 35, 0)  # Move up when 'w' is pressed
-    elif key == 's':
-        drone.send_rc_control(0, 0, -35, 0)  # Move down when 's' is pressed
-    elif key == 'z':
-        drone.flip_forward()
-    elif key == 'a':
-        drone.send_rc_control(0, -35, 0, 0)  # Move left when 'a' is pressed
-    elif key == 'd':
-        drone.send_rc_control(0, 35, 0, 0)  # Move right when 'd' is pressed
-    elif key == 'q':
-        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
-    elif key == 'e':
-        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'e' is pressed
-    elif key == 't':
-        drone.takeoff()
-    elif key == '0':
-        drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
-    elif key == 'l':
-        drone.land()  # Land when spacebar is pressed
-    elif key == 'p':
-        drone.send_rc_control(0, 50, 0, 0)  # Stop the drone when a key is released
+    # Information to show on the screen
+    class_ids = []
+    confidences = []
+    boxes = []
+
+    # Extract information from outs
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+
+            if confidence > 0.5:
+                # Object detected
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                # Rectangle coordinates
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x, y, w, h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+
+    # Draw rectangles and labels on the objects detected
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            label = str(class_ids[i])
+            confidence = confidences[i]
+            color = (0, 255, 0)  # Green color for pests and rodents
+
+            # Draw rectangle and label
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1, color, 2)
+
+    return frame
 
 
 # Function to control the drone
 def drone_control_thread():
-    control_drone()
+    while True:
+        drone.send_rc_control(0, 0, 0, 0)
 
 
 # Function to update video until connection is established
 def update_video_thread():
     while True:
         update_video()
-
-
-# Create a Tkinter window
-root = tk.Tk()
-root.title("AgriDrone Assesment")
-root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-
-root.bind("<KeyPress>", on_key_press)
-root.bind("<KeyRelease>", on_key_release)
-
-# Define color codes and their corresponding transparency values
-color_transparency = {
-    (0, 0, 255): 250,  # Blue (high rate)
-    (0, 255, 255): 200,  # Yellow (medium rate)
-    (0, 255, 0): 150,  # Green (medium rate)
-    (0, 165, 255): 100,  # Orange (low rate)
-    (128, 0, 128): 0  # Purple (no data)
-}
 
 
 # Function to receive and process NDVI map image
@@ -113,6 +123,64 @@ def receive_ndvi_map():
             break
 
 
+def on_key_release():
+    drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+
+
+def on_key_press(event):
+    key = event.char
+
+    print(drone.get_battery())
+
+    if key == 'w':
+        drone.send_rc_control(0, 0, 35, 0)  # Move up when 'w' is pressed
+    elif key == 's':
+        drone.send_rc_control(0, 0, -35, 0)  # Move down when 's' is pressed
+    elif key == 'z':
+        drone.flip_forward()
+    elif key == 'a':
+        drone.send_rc_control(0, -35, 0, 0)  # Move left when 'a' is pressed
+    elif key == 'd':
+        drone.send_rc_control(0, 35, 0, 0)  # Move right when 'd' is pressed
+    elif key == 'q':
+        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
+    elif key == 'e':
+        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'e' is pressed
+    elif key == 't':
+        drone.takeoff()
+    elif key == 'z':
+        drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+    elif key == 'l':
+        drone.land()  # Land when spacebar is pressed
+
+
+# Define color codes and their corresponding transparency values
+color_transparency = {
+    (0, 0, 255): 250,  # Blue (high rate)
+    (0, 255, 255): 200,  # Yellow (medium rate)
+    (0, 255, 0): 150,  # Green (medium rate)
+    (0, 165, 255): 100,  # Orange (low rate)
+    (128, 0, 128): 0  # Purple (no data)
+}
+
+
+def take_off():
+    drone.takeoff()
+    drone.set_speed(30)
+    drone.streamon()
+
+
+# Create a Tkinter window
+root = tk.Tk()
+root.bind("<KeyPress>", on_key_press)
+root.bind("<KeyRelease>", on_key_release)
+root.title("Agri~Drone")
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+
+takeoff_button = tk.Button(root, text="Take Off", command=take_off)
+takeoff_button.pack(pady=20)
+
+
 # Function to update video until connection is established
 def update_video():
     frame = drone.get_frame_read().frame  # Get frame from the drone's camera
@@ -143,6 +211,7 @@ def start_ndvi_stream():
     def update_ndvi_video():
         frame = drone.get_frame_read().frame
         processed_frame = process_frame(frame)
+        processed_frame = identify_objects_yolo(processed_frame)
 
         # Calculate and visualize NDVI
         ndvi_image = calculate_and_visualize_ndvi(processed_frame)
@@ -171,45 +240,13 @@ def get_soil_type(color):
     return None
 
 
-#
-# def capture_and_analyze():
-#     try:
-#         frame = drone.get_frame_read().frame
-#
-#         # Calculate NDVI
-#         ndvi_map = calculate_ndvi(frame)
-#
-#         # Detect pests or diseases
-#         pests_or_diseases_result = identify_pests_or_diseases(frame)
-#
-#         # Analyze crop health
-#         crop_health = analyze_crop_health(ndvi_map)
-#
-#         # Display NDVI map
-#         cv2.imshow("NDVI Map", ndvi_map)
-#
-#         # Display pests or diseases detection result
-#         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-#
-#         # Provide feedback to the user
-#         analysis_label.config(text=f"Analysis: Crop Health - {crop_health}")
-#
-#         cv2.waitKey(0)
-#         cv2.destroyAllWindows()
-#
-#     except Exception as E:
-#         print(f"Error in capture_and_analyze: {E}")
-#         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
-
-
 def calculate_and_visualize_ndvi(frame):
     red_band = frame[:, :, 1]
     nir_band = frame[:, :, 2]
 
     # Calculate NDVI
     ndvi_map = (nir_band - red_band) / (nir_band + red_band)
-    ndvi_map = np.nan_to_num(ndvi_map)  # Handle potential division by zero issues
-
+    ndvi_map = np.nan_to_num(ndvi_map)
     # Apply a colormap for visualization (Jet colormap in this case)
     ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
 
@@ -242,9 +279,9 @@ def analyze_crop_health(ndvi_map):
 def capture_and_analyze():
     try:
         frame = drone.get_frame_read().frame
-
-        # crop_condition = predict_crop_condition(frame)
-        # ndvi_result = calculate_ndvi(frame)
+        ndvi_value = calculate_and_visualize_ndvi(frame)
+        crop_health = analyze_crop_health(ndvi_value)
+        create_report(crop_health)
         pests_or_diseases_result = identify_pests_or_diseases(frame)
         # object_detected_frame = identify_objects(frame)
 
@@ -295,7 +332,8 @@ def process_frame(frame):
 
 
 def close_application():
-    messagebox.showinfo("Goodbye", "LogOut successful!")
+    drone.land()
+    messagebox.showinfo("LogOut successful!", "AgriDrone disconnected and Goodbye")
     root.destroy()
 
 
@@ -305,30 +343,34 @@ def open_application():
 
 
 # Create a button to trigger the video stream
-video_button = tk.Button(root, text="View stream", command=update_video)
-video_button.pack()
+video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
+video_button.grid(row=0, column=0, padx=10, pady=10)  # Place the button at row 0, column 0 with padding
 
 # Create a button to trigger the NDVI stream
-ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)
-ndvi_button.pack()
+ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
+ndvi_button.grid(row=0, column=1, padx=10, pady=10)  # Place the button at row 0, column 1 with padding
+
+# Create a button to trigger the analysis
+analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
+analyze_button.grid(row=0, column=2, padx=10, pady=10)  # Place the button at row 0, column 2 with padding
+
+# Create a button for the report
+report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
+report_button.grid(row=0, column=3, padx=10, pady=10)  # Place the button at row 0, column 3 with padding
+
+# Create a button for logout
+logout_button = tk.Button(root, text="LogOut", command=close_application)
+logout_button.grid(row=0, column=4, padx=10, pady=10)  # Place the button at row 0, column 4 with padding
 
 # Create a label for the analysis
-analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
-analysis_label.pack()
+analysis_label = tk.Label(root, text="Analysis:")
+analysis_label.grid(row=1, column=0, columnspan=5, pady=10)  # Span the label across all columns with padding
+
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
 video_label.pack()
-
-# Create a button to trigger the analysis
-analyze_button = tk.Button(root, text="Analyze Crop", command=capture_and_analyze)
-analyze_button.pack()
-
-report_button = tk.Button(root, command=open_application)
-report_button.pack()
-
-logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack()
-root.mainloop()
+copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
+                           font=("Times New Roman", 14, "bold italic"))
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
@@ -337,4 +379,4 @@ drone_thread = threading.Thread(target=drone_control_thread)
 video_thread.start()
 drone_thread.start()
 
-control_drone(0)
+root.mainloop()

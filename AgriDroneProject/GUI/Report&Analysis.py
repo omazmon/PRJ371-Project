@@ -9,7 +9,7 @@ drone.connect()
 drone.takeoff()
 drone.set_speed(90)
 drone.flip_forward()
-drone.move_up(50)
+
 
 # Wait for the Tello to be ready
 time.sleep(2)

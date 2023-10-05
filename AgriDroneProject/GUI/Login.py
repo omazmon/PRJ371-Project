@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 # Create the main application window
 root = tk.Tk()
-root.title("Login Form")
+root.title("Agri~Drone")
 
 # Set a consistent color scheme
 BG_COLOR = "#C0C0C0"
@@ -15,24 +15,18 @@ BUTTON_COLOR = "#4CAF50"
 # Load the background image
 background_image = Image.open("background-image.jpg")
 background_photo = ImageTk.PhotoImage(background_image)
-
-# Create a label to display the background image
-background_label = tk.Label(root, image=background_photo)
-background_label.place(x=0, y=0, relwidth=1, relheight=1)
-
 # Set the window size to a fixed size for better appearance
-root.geometry("270x250")
+root.geometry("400x300")
 
 
 # Function to open the Application.py
 def open_application():
-    root.destroy()
     subprocess.Popen(["python", "Application.py"])
 
 
 valid_credentials = {
     "technician": {"username": "admin", "password": bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())},
-    "farmer": {"username": "farmer", "password": bcrypt.hashpw("password123".encode('utf-8'), bcrypt.gensalt())}
+    "farmer": {"username": "farmer", "password": bcrypt.hashpw("@1234@".encode('utf-8'), bcrypt.gensalt())}
 }
 
 
@@ -55,11 +49,14 @@ def login():
 
     if user_role:
         messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
-        root.withdraw()
         open_application()
+        root.destroy()
     else:
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
+
+label_Welcome = tk.Label(root, text="Login", font=("Times New Roman", 20, "bold italic"))
+label_Welcome.pack(pady=10)
 label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
 label_username.pack(pady=10)
 entry_username = tk.Entry(root)
@@ -72,6 +69,7 @@ entry_password.pack(pady=10, padx=20)
 
 login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
 login_button.pack(pady=20)
-
-
+copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
+                           font=("Times New Roman", 14, "bold italic"))
+copyright_label.pack()
 root.mainloop()
