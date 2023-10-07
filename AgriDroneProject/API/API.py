@@ -1,80 +1,71 @@
-import threading
 from flask import Flask, request, jsonify
-import logging
-from keras.src.applications.densenet import layers
-from requests import models
-from AgriDroneProject.GUI.Assesment import X_train, y_train, X_test, y_test
-from AgriDroneProject.GUI.DroneGui import toggle_record, capture_image, root
+import requests
 
-
-# Define the CNN model
-model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(128, activation='relu'),
-    layers.Dense(num_classes, activation='softmax')  # num_classes is the number of crop conditions
-])
-
-# Compile the model
-model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',
-              metrics=['accuracy'])
-
-# Train the model using your prepared dataset
-model.fit(X_train, y_train, epochs=10, validation_data=(X_test, y_test))
-
-# Evaluate the model
-test_loss, test_accuracy = model.evaluate(X_test, y_test)
-print(f"Test accuracy: {test_accuracy * 100:.2f}%")
-
-# Save the trained model and label encoder
-model.save("crop_condition_model.h5")
-
-# Create a logger
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler = logging.FileHandler('agri_drone.log')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-# Define your configuration variables
-irrigation_threshold = 0.4
-
-# Create a Flask app
 app = Flask(__name__)
 
+# External weather API endpoint (example: OpenWeatherMap API)
+WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/weather"
+WEATHER_API_KEY = "YOUR_WEATHER_API_KEY"  #
 
-# Define API routes
-@app.route('/api/start_recording', methods=['POST'])
-def api_start_recording():
-    try:
-        # Start/stop video recording
-        toggle_record()
-        return jsonify({"message": "Video recording toggled"}), 200
-    except Exception as e:
-        logger.error(f"Error toggling video recording: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+# Example crops database (you can replace it with your own data or database)
+crops_data = {
+    "wheat": {
+        "temperature_range": [15, 25],  # Celsius
+        "rainfall_range": [50, 100]  # mm
+    },
+    "corn": {
+        "temperature_range": [20, 30],  # Celsius
+        "rainfall_range": [100, 200]  # mm
+    },
+    # Add more crops and their suitable conditions here
+}
 
-@app.route('/api/capture_image', methods=['POST'])
-def api_capture_image():
-    try:
-        # Capture an image
-        capture_image()
-        return jsonify({"message": "Image captured"}), 200
-    except Exception as e:
-        logger.error(f"Error capturing image: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+
+# Endpoint for weather forecast
+@app.route('/api/weather', methods=['GET'])
+def get_weather_forecast():
+    city = request.args.get('city')
+    if not city:
+        return jsonify({"error": "City parameter is missing"}), 400
+
+    params = {
+        'q': city,
+        'appid': WEATHER_API_KEY,
+        'units': 'metric'  # Get temperature in Celsius
+    }
+
+    response = requests.get(WEATHER_API_URL, params=params)
+
+    if response.status_code == 200:
+        data = response.json()
+        weather = {
+            "temperature": data["main"]["temp"],
+            "humidity": data["main"]["humidity"],
+            "description": data["weather"][0]["description"]
+        }
+        return jsonify({"weather": weather}), 200
+    else:
+        return jsonify({"error": "Failed to fetch weather data"}), 500
+
+
+# Endpoint for crop analysis
+@app.route('/api/crop-analysis', methods=['GET'])
+def crop_analysis():
+    crop = request.args.get('crop')
+    temperature = float(request.args.get('temperature'))
+    rainfall = float(request.args.get('rainfall'))
+
+    if not crop or crop.lower() not in crops_data:
+        return jsonify({"error": "Invalid or missing crop parameter"}), 400
+
+    suitable_conditions = crops_data[crop.lower()]
+    temp_range = suitable_conditions["temperature_range"]
+    rainfall_range = suitable_conditions["rainfall_range"]
+
+    is_suitable = temp_range[0] <= temperature <= temp_range[1] and rainfall_range[0] <= rainfall <= rainfall_range[1]
+
+    return jsonify({"is_suitable": is_suitable}), 200
 
 
 if __name__ == "__main__":
-    try:
-        # Start both the Tkinter and Flask applications in separate threads
-        t1 = threading.Thread(target=root.mainloop)
-        t2 = threading.Thread(target=app.run, kwargs={"debug": True})
-
-        t1.start()
-        t2.start()
-    except Exception as e:
-        logger.error(f"Error starting threads: {str(e)}")
+    app.run(debug=True)

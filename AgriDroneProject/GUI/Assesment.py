@@ -1,82 +1,295 @@
 import subprocess
+import threading
 from future.moves.tkinter import messagebox
-from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC
-import cap
 import tkinter as tk
 import cv2
 from tkinter import messagebox
 import numpy as np
 from djitellopy import Tello
 from PIL import Image, ImageTk
-from sklearn.externals import joblib
-
-# Create a Tkinter window
-root = tk.Tk()
-root.title("AgriDrone Assesment")
 
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
 drone.streamon()
 
-# Load YOLO model and class labels
-net = cv2.dnn.readNet('yolov3.weights', 'yolov3.cfg')
+# Initialize the Haar cascade for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-with open('coco.names', 'r') as f:
-    classes = f.read().strip().split('\n')
+# Load YOLO
+net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+
+
+def create_report(crop_health):
+    with open('crop_health_report.txt', 'a') as file:
+        file.write(f'Crop Health: {crop_health}\n')
+
+
+# Function for object detection
+def identify_objects_yolo(frame):
+    height, width, channels = frame.shape
+
+    # Detecting objects
+    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+    net.setInput(blob)
+    outs = net.forward(output_layers)
+
+    # Information to show on the screen
+    class_ids = []
+    confidences = []
+    boxes = []
+
+    # Extract information from outs
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+
+            if confidence > 0.5:
+                # Object detected
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
+
+                # Rectangle coordinates
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
+
+                boxes.append([x, y, w, h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+
+    # Draw rectangles and labels on the objects detected
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            label = str(class_ids[i])
+            confidence = confidences[i]
+            color = (0, 255, 0)  # Green color for pests and rodents
+
+            # Draw rectangle and label
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1, color, 2)
+
+    return frame
+
+
+# Function to control the drone
+def drone_control_thread():
+    while True:
+        drone.send_rc_control(0, 0, 0, 0)
+
+
+# Function to update video until connection is established
+def update_video_thread():
+    while True:
+        update_video()
+
+
+# Function to receive and process NDVI map image
+def receive_ndvi_map():
+    while True:
+        frame = drone.get_frame_read().frame
+
+        # Process the frame (assuming the NDVI map is in a specific region of the frame)
+        ndvi_map = frame[30:30, 30:30]
+
+        # Apply transparency based on color codes
+        for i in range(ndvi_map.shape[0]):
+            for j in range(ndvi_map.shape[1]):
+                pixel_color = tuple(ndvi_map[i, j])
+                if pixel_color in color_transparency:
+                    alpha = color_transparency[pixel_color]
+                    ndvi_map[i, j] = (ndvi_map[i, j][0], ndvi_map[i, j][1], ndvi_map[i, j][2], alpha)
+
+        # Create a transparent PNG image
+        output_image = np.zeros((ndvi_map.shape[0], ndvi_map.shape[1], 4), dtype=np.uint8)
+        output_image[:, :, :3] = ndvi_map
+        output_image[:, :, 3] = 255  # Set alpha channel to 255 for non-transparent pixels
+
+        # Save the output image with transparency (optional)
+        cv2.imwrite('output_transparent_ndvi_map.png', output_image)
+
+        # Display the output image (optional)
+        cv2.imshow('Transparent NDVI Map', output_image)
+
+        # Break the loop and close windows if 'f' key is pressed
+        if cv2.waitKey(1) & 0xFF == ord('f'):
+            break
+
+
+def on_key_release():
+    drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+
+
+def take_off():
+    drone.takeoff()
+    drone.set_speed(35)
+
+
+def on_key_press(event):
+    key = event.char
+
+    print(drone.get_battery())
+
+    if key == 'Up':
+        drone.send_rc_control(0, 0, 35, 0)  # Move up when
+    elif key == 'Down':
+        drone.send_rc_control(0, 0, -35, 0)  # Move down when
+    elif key == 'z':
+        drone.flip_forward()
+    elif key == 'Left':
+        drone.send_rc_control(0, -35, 0, 0)
+    elif key == 'Right':
+        drone.send_rc_control(0, 35, 0, 0)
+    elif key == 'q':
+        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
+    elif key == 'w':
+        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
+    elif key == 't':
+        take_off()
+    elif key == 'z':
+        drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+    elif key == 'space':
+        drone.land()  # Land when spacebar is pressed
+
+
+# Define color codes and their corresponding transparency values
+color_transparency = {
+    (0, 0, 255): 250,  # Blue (high rate)
+    (0, 255, 255): 200,  # Yellow (medium rate)
+    (0, 255, 0): 150,  # Green (medium rate)
+    (0, 165, 255): 100,  # Orange (low rate)
+    (128, 0, 128): 0  # Purple (no data)
+}
+
+# Create a Tkinter window
+root = tk.Tk()
+root.bind("<KeyPress>", on_key_press)
+root.bind("<KeyRelease>", on_key_release)
+root.title("Agri~Drone")
+root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+
+takeoff_button = tk.Button(root, text="Take Off", command=take_off)
+takeoff_button.pack(pady=20)
 
 
 # Function to update video until connection is established
 def update_video():
-    try:
-        ret, frame = cap.read()
-        if ret:
-            # Process the frame
-            processed_frame = process_frame(frame)
+    frame = drone.get_frame_read().frame  # Get frame from the drone's camera
 
-            # Convert the processed frame to a format compatible with Tkinter
-            img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(img)
-            img = ImageTk.PhotoImage(image=img)
+    # Process the frame
+    processed_frame = process_frame(frame)
 
-            # Update the label with the new frame
-            video_label.img = img
-            video_label.config(image=img)
-            root.after(10, update_video)
-        else:
-            print("Connection lost. Stopping video update.")
-            cap.release()
-    except Exception as E:
-        print(f"Error in update_video: {E}")
-        messagebox.showerror("Error", f"Error in update_video: {E}")
-        cap.release()
+    # Convert the processed frame to a format compatible with Tkinter
+    img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(img)
+    img = ImageTk.PhotoImage(image=img)
+
+    # Update the label with the new frame
+    video_label.img = img
+    video_label.config(image=img)
+    root.after(3, update_video)
 
 
-try:
-    crop_condition_clf = joblib.load("your_crop_condition_model_path.pkl")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    # Handle the error, show a message box, or exit the program.
-    exit()
+def identify_pests_or_diseases(image):
+    green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
+    threshold = 100  # Adjust this threshold as needed
+    pests_detected = np.where(green_channel < threshold, 1, 0)
+    return pests_detected
 
 
-# Function to capture and analyze
+def start_ndvi_stream():
+    # Function to update video with NDVI frames
+    def update_ndvi_video():
+        frame = drone.get_frame_read().frame
+        processed_frame = process_frame(frame)
+        processed_frame = identify_objects_yolo(processed_frame)
+
+        # Calculate and visualize NDVI
+        ndvi_image = calculate_and_visualize_ndvi(processed_frame)
+
+        # Update the label with the new NDVI image
+        video_label.img = ndvi_image
+        video_label.config(image=ndvi_image)
+        root.after(3, update_ndvi_video)
+
+    # Start updating the video with NDVI frames
+    update_ndvi_video()
+
+
+# Function to identify soil type from color
+def get_soil_type(color):
+    soil_colors = {
+        (255, 0, 0): 'coarser texture, darker colored soil',
+        (0, 255, 255): 'coarser texture, lighter colored soil',
+        (0, 255, 0): 'nominal',
+        (0, 140, 255): 'finer texture, darker colored soil',
+        (128, 0, 128): 'finer texture, lighter colored soil'
+    }
+    for key in soil_colors.keys():
+        if np.array_equal(color, np.array(key)):
+            return soil_colors[key]
+    return None
+
+
+def calculate_and_visualize_ndvi(frame):
+    red_band = frame[:, :, 1]
+    nir_band = frame[:, :, 2]
+
+    # Calculate NDVI
+    ndvi_map = (nir_band - red_band) / (nir_band + red_band)
+    ndvi_map = np.nan_to_num(ndvi_map)
+    # Apply a colormap for visualization (Jet colormap in this case)
+    ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
+
+    # Convert to RGB format for PIL and Tkinter compatibility
+    ndvi_visualized_rgb = cv2.cvtColor(ndvi_visualized, cv2.COLOR_BGR2RGB)
+
+    # Convert to ImageTk format
+    img = Image.fromarray(ndvi_visualized_rgb)
+    img_tk = ImageTk.PhotoImage(image=img)
+
+    return img_tk
+
+
+def visualize_ndvi(ndvi_map):
+    ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
+    return ndvi_visualized
+
+
+def analyze_crop_health(ndvi_map):
+    average_ndvi = np.mean(ndvi_map)
+
+    if average_ndvi >= 0.8:
+        return "Healthy"
+    elif 0.5 <= average_ndvi < 0.8:
+        return "Moderate Stress"
+    else:
+        return "Severe Stress"
+
+
 def capture_and_analyze():
     try:
         frame = drone.get_frame_read().frame
-
-        crop_condition = predict_crop_condition(frame)
-        ndvi_result = calculate_ndvi(frame)
+        ndvi_value = calculate_and_visualize_ndvi(frame)
+        crop_health = analyze_crop_health(ndvi_value)
+        create_report(crop_health)
         pests_or_diseases_result = identify_pests_or_diseases(frame)
-        object_detected_frame = identify_objects(frame)
+        # object_detected_frame = identify_objects(frame)
 
         cv2.imshow("Original Image", frame)
-        cv2.imshow("NDVI", ndvi_result)
+        cv2.imshow("NDVI", receive_ndvi_map())
         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-        cv2.imshow("Object Detection", object_detected_frame)
-
-        analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
+        # cv2.imshow("Object Detection", object_detected_frame)
+        #
+        # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
 
         cv2.waitKey(0)
         cv2.destroyAllWindows()
@@ -86,42 +299,51 @@ def capture_and_analyze():
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
 
-try:
-    features = np.load('features.npy')
-    labels = np.load('labels.npy')
-    ndvi_map = cv2.imread('path_to_ndvi_map_image.jpg')
-    crop_condition_clf = SVC(kernel='linear', C=1)
-    crop_condition_clf.load("your_crop_condition_model_path")
-    crop_condition_label_encoder = LabelEncoder()
-    crop_condition_label_encoder.classes_ = np.load("your_crop_condition_label_encoder_path.npy", allow_pickle=True)
-except Exception as e:
-    print(f"Error loading data: {e}")
-    # Handle the error, show a message box, or exit the program.
-    exit()
+# top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
+# crop_colors = {
+#     "Maize": (0, 255, 0),  # Green color for Maize
+#     "Sugarcane": (0, 0, 255),  # Red color for Sugarcane
+#     "Wheat": (255, 0, 0),  # Blue color for Wheat
+#     "Sunflower": (0, 255, 255),  # Yellow color for Sunflower
+#     "Citrus": (255, 255, 0)  # Cyan color for Citrus
+# }
+# def process_frame(frame):
+#     # Convert the frame to HSV for color-based segmentation
+#     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+#
+#     # Define the lower and upper bounds for each crop color (you need to adjust these values)
+#     lower_boundaries = {
+#         "Maize": np.array([35, 100, 100]),
+#         "Sugarcane": np.array([0, 100, 100]),
+#         "Wheat": np.array([20, 100, 100]),
+#         "Sunflower": np.array([15, 100, 100]),
+#         "Citrus": np.array([25, 100, 100])
+#     }
+#     upper_boundaries = {
+#         "Maize": np.array([90, 255, 255]),
+#         "Sugarcane": np.array([10, 255, 255]),
+#         "Wheat": np.array([40, 255, 255]),
+#         "Sunflower": np.array([30, 255, 255]),
+#         "Citrus": np.array([35, 255, 255])
+#     }
+#
+#     # Initialize an empty list to store detected crops
+#     detected_crops = []
+#
+#     # Detect crops and draw rectangles around them
+#     for crop, (lower, upper) in zip(top_crops, zip(lower_boundaries.values(), upper_boundaries.values())):
+#         mask = cv2.inRange(hsv, lower, upper)
+#         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+#         for contour in contours:
+#             x, y, w, h = cv2.boundingRect(contour)
+#             cv2.rectangle(frame, (x, y), (x + w, y + h), crop_colors[crop], 2)
+#             detected_crops.append(crop)
+#
+#     return frame, detected_crops
 
-
-# Function to identify and label objects
-def identify_objects(frame):
-    detected_objects, confidences = detect_objects(frame)
-
-    for K, (x1, y1, x2, y2, class_id) in enumerate(detected_objects):
-        label = classes[class_id]
-        confidence = confidences[K]
-        text = f"{label}: {confidence:.2f}"
-
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-    return frame
-
-
-# Function to process each frame
 def process_frame(frame):
-    # Convert the frame to grayscale for simpler processing
+    # Convert the frame to grayscale  detection
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Apply image processing techniques to identify crop issues
-    # You can use any image processing or computer vision techniques here
 
     # Example: Detect edges using Canny edge detection
     edges = cv2.Canny(gray, 50, 150)
@@ -133,126 +355,36 @@ def process_frame(frame):
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)  # Red rectangle
+    # Detect faces using Haar cascade
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    for (x, y, w, h) in faces:
+        cv2.circle(frame, (x + w // 2, y + h // 2), min(w, h) // 2, (0, 255, 0),
+                   2)  # Draw a green circle around the face
+
+    # Convert the frame to HSV for color-based object detection (e.g., cars)
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Define lower and upper bounds for the blue color (for cars)
+    lower_blue = np.array([100, 50, 50])
+    upper_blue = np.array([140, 255, 255])
+
+    # Threshold the HSV image to get only blue colors
+    blue_mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+    # Find contours in the blue mask
+    contours, _ = cv2.findContours(blue_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Draw blue rectangles around objects detected as cars
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)  # Draw a blue rectangle around the object
 
     return frame
 
 
-# Function to preprocess and predict crop condition from a frame
-def predict_crop_condition(frame):
-    frame = cv2.resize(frame, (64, 64)).flatten() / 255.0
-    prediction = crop_condition_clf.predict([frame])
-    predicted_class = crop_condition_label_encoder.inverse_transform(prediction)[0]
-    return predicted_class
-
-
-# Define color ranges for different nitrogen levels and soil types
-nitrogen_colors = {
-    (0, 0, 255): 250,  # Blue (high rate)
-    (0, 255, 255): 200,  # Yellow (medium rate)
-    (0, 255, 0): 150,  # Green (medium rate)
-    (0, 165, 255): 100,  # Orange (low rate)
-    (128, 0, 128): None  # Purple (no data)
-}
-
-soil_colors = {
-    (255, 0, 0): 'coarser texture, darker colored soil',
-    (0, 255, 255): 'coarser texture, lighter colored soil',
-    (0, 255, 0): 'nominal',
-    (0, 140, 255): 'finer texture, darker colored soil',
-    (128, 0, 128): 'finer texture, lighter colored soil'
-}
-
-
-# Function to identify nitrogen level from color
-def get_nitrogen_level(color):
-    for key in nitrogen_colors.keys():
-        if np.array_equal(color, np.array(key)):
-            return nitrogen_colors[key]
-    return None
-
-
-# Function to identify soil type from color
-def get_soil_type(color):
-    for key in soil_colors.keys():
-        if np.array_equal(color, np.array(key)):
-            return soil_colors[key]
-    return None
-
-
-# Process each pixel in the NDVI map to extract nitrogen levels and soil types
-for i in range(ndvi_map.shape[0]):
-    for j in range(ndvi_map.shape[1]):
-        pixel_color = ndvi_map[i, j]
-        nitrogen_level = get_nitrogen_level(pixel_color)
-        soil_type = get_soil_type(pixel_color)
-        if nitrogen_level is not None:
-            print(f'Nitrogen Level at pixel ({i}, {j}): {nitrogen_level}')
-        if soil_type is not None:
-            print(f'Soil Type at pixel ({i}, {j}): {soil_type}')
-
-
-# Function to calculate NDVI
-def calculate_ndvi(image):
-    # Extract the red and near-infrared (NIR) channels as float32
-    red_channel = image[:, :, 2].astype(np.float32)
-    nir_channel = image[:, :, 3].astype(np.float32)
-
-    # Calculate NDVI using vectorized operations
-    ndvi = (nir_channel - red_channel) / (nir_channel + red_channel)
-
-    return ndvi
-
-
-# Function to identify pests or diseases
-def identify_pests_or_diseases(image):
-    green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
-    threshold = 100  # Adjust this threshold as needed
-    pests_detected = np.where(green_channel < threshold, 1, 0)
-    return pests_detected
-
-
-# Function to perform object detection
-def detect_objects(frame):
-    # Prepare the input image for YOLO
-    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (416, 416), swapRB=True, crop=False)
-    net.setInput(blob)
-
-    # Get the output layer names
-    output_layer_names = net.getUnconnectedOutLayersNames()
-
-    # Run YOLO forward pass to get detections
-    detections = net.forward(output_layer_names)
-
-    # Initialize lists to store detected objects and their confidences
-    detected_objects = []
-    confidences = []
-
-    # Loop over the detections
-    for detection in detections:
-        for obj in detection:
-            scores = obj[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-
-            # Filter out weak detections by setting a confidence threshold
-            if confidence > 0.5:
-                center_x = int(obj[0] * frame.shape[1])
-                center_y = int(obj[1] * frame.shape[0])
-                width = int(obj[2] * frame.shape[1])
-                height = int(obj[3] * frame.shape[0])
-
-                # Calculate bounding box coordinates
-                x = int(center_x - width / 2)
-                y = int(center_y - height / 2)
-
-                detected_objects.append((x, y, x + width, y + height))
-                confidences.append(float(confidence))
-
-    return detected_objects, confidences
-
-
 def close_application():
-    messagebox.showinfo("Goodbye", "LogOut successful!")
+    drone.land()
+    messagebox.showinfo("LogOut successful!", "AgriDrone disconnected and Goodbye")
     root.destroy()
 
 
@@ -262,23 +394,40 @@ def open_application():
 
 
 # Create a button to trigger the video stream
-video_button = tk.Button(root, text="View stream", command=update_video)
-video_button.pack()
+video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
+video_button.grid(row=0, column=0, padx=10, pady=10)  # Place the button at row 0, column 0 with padding
+
+# Create a button to trigger the NDVI stream
+ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
+ndvi_button.grid(row=0, column=1, padx=10, pady=10)  # Place the button at row 0, column 1 with padding
+
+# Create a button to trigger the analysis
+analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
+analyze_button.grid(row=0, column=2, padx=10, pady=10)  # Place the button at row 0, column 2 with padding
+
+# Create a button for the report
+report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
+report_button.grid(row=0, column=3, padx=10, pady=10)  # Place the button at row 0, column 3 with padding
+
+# Create a button for logout
+logout_button = tk.Button(root, text="LogOut", command=close_application)
+logout_button.grid(row=0, column=4, padx=10, pady=10)  # Place the button at row 0, column 4 with padding
+
 # Create a label for the analysis
-analysis_label = tk.Label(root, text="Analysis:", font=("Times New Roman", 16))
-analysis_label.pack()
+analysis_label = tk.Label(root, text="Analysis:")
+analysis_label.grid(row=1, column=0, columnspan=5, pady=10)  # Span the label across all columns with padding
+
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
 video_label.pack()
+copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
+                           font=("Times New Roman", 14, "bold italic"))
+# Create threads for controlling the drone and updating the video
+video_thread = threading.Thread(target=update_video_thread)
+drone_thread = threading.Thread(target=drone_control_thread)
 
-# Create a button to trigger the analysis
-analyze_button = tk.Button(root, text="Analyze Crop", command=capture_and_analyze)
-analyze_button.pack()
+# Start both threads
+video_thread.start()
+drone_thread.start()
 
-report_button = tk.Button(root, command=open_application)
-report_button.pack()
-
-logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack()
-# Run the Tkinter main loop
 root.mainloop()

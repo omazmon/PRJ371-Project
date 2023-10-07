@@ -6,6 +6,10 @@ from reportlab.pdfgen import canvas
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
+drone.takeoff()
+drone.set_speed(90)
+drone.flip_forward()
+
 
 # Wait for the Tello to be ready
 time.sleep(2)
