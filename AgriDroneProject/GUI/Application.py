@@ -2,52 +2,19 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
 import pyodbc
-from PIL import Image, ImageTk
-from djitellopy.tello import *
+import requests
+
 # Create a Tkinter window
 root = tk.Tk()
-root.title("AgriDrone Application")
+root.title("Agri~Drone")
 
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
-# Set the background image
-background_image = Image.open("background-image.jpg")  # Replace with your background image file
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
-# Create a list of provinces in South Africa
-provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
-             "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
-
-# Create a list of top 5 farming crops in South Africa
-top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
-# Create a welcome label
-welcome_label = tk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 24, "bold"), fg="black")
-welcome_label.pack()
-
-# Create a location dropdown (combobox)
-location_label = ttk.Label(root, text="Location")
-location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
-location_combobox.set("Please select province")
-location_label.pack()
-location_combobox.pack()
-
-# Create a crop type dropdown (combobox)
-crop_label = ttk.Label(root, text="Crop Type")
-crop_combobox = ttk.Combobox(root, values=top_crops, state="readonly")
-crop_combobox.set("Select Crop Type")
-crop_label.pack()
-crop_combobox.pack()
-
-drone = Tello()
-drone.connect()
-drone.streamon()
-
 # Create a connection to the database
 conn_str = (
     r'DRIVER={SQL Server Native Client 11.0};'
-    r'SERVER=Mthokozisi-2\SQLEXPRESS;'
+    r'SERVER=local\SQLEXPRESS;'
     r'DATABASE=AgriDrone;'
     r'Trusted_Connection=yes;'
 )
@@ -69,6 +36,7 @@ try:
     farm_name_combobox.set("Select Farm Name")
     farm_name_combobox.pack()
 except Exception as e:
+    print(f"Error: {e}")
     messagebox.showerror("Error", f"Failed to connect to the database: {e}")
 
 
@@ -77,24 +45,64 @@ def open_dronedata():
     farm_name = farm_name_combobox.get()  # Get the farm name from the combobox
     selected_crop = crop_combobox.get()  # Get the selected crop type
     if selected_province != "Please select province" and farm_name and selected_crop:
-        # You can use selected_province, farm_name, and selected_crop here for further processing
-        subprocess.Popen(["python", "Assesment.py"])
-        drone.takeoff()
-        print(drone.get_current_state())
+
+        api_key = 'YOUR_OPENWEATHERMAP_API_KEY'
+        weather_api_url = f'http://api.openweathermap.org/data/2.5/weather?q={selected_province}&appid={api_key}&units=metric'
+        response = requests.get(weather_api_url)
+        if response.status_code == 200:
+            weather_data = response.json()
+            temperature = weather_data['main']['temp']
+            humidity = weather_data['main']['humidity']
+            description = weather_data['weather'][0]['description']
+            return f"Temperature: {temperature}°C, Humidity: {humidity}%, Description: {description}"
+        else:
+            return "Failed to fetch weather data"
     else:
         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
 
 
+# Function to display weather forecast
+def display_weather_forecast():
+    weather_forecast = open_dronedata()
+    messagebox.showinfo("Weather Forecast", weather_forecast)
+
+
 def close_application():
-    messagebox.showinfo("Goodbye", "LogOut successful!")
+    subprocess.Popen(["python", "Assesment.py"])
     root.destroy()
 
 
-# Create a button for Crop Assessment (formerly DroneData)
-crop_assessment_button = ttk.Button(root, text="Start Drone", command=open_dronedata)
+# Create a list of provinces in South Africa
+provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
+             "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
+
+# Create a list of top 5 farming crops in South Africa
+top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
+# Create a welcome label
+welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 14, "bold"))
+welcome_label.pack()
+
+# Create a location dropdown (combobox)
+location_label = ttk.Label(root, text="Location")
+location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
+location_combobox.set("Please select province")
+location_label.pack()
+location_combobox.pack()
+
+# Create a crop type dropdown (combobox)
+crop_label = ttk.Label(root, text="Crop Type")
+crop_combobox = ttk.Combobox(root, values=top_crops, state="readonly")
+crop_combobox.set("Select Crop Type")
+crop_label.pack()
+crop_combobox.pack()
+# Create a button to fetch and display weather forecast
+weather_button = ttk.Button(root, text="Check Weather Forecast", command=display_weather_forecast)
+weather_button.pack()
+
+crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application)
 crop_assessment_button.pack()
 
-logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack()
+copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
+                            font=("Times New Roman", 14, "bold italic"))
 # Start the GUI main loop
 root.mainloop()
