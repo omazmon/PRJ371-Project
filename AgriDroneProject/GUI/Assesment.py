@@ -1,4 +1,3 @@
-import subprocess
 import threading
 from future.moves.tkinter import messagebox
 import tkinter as tk
@@ -16,72 +15,73 @@ drone.streamon()
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# Load YOLO
-net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
+# # Load YOLO
+# net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+# layer_names = net.getLayerNames()
+# output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+#
 
 def create_report(crop_health):
     with open('crop_health_report.txt', 'a') as file:
         file.write(f'Crop Health: {crop_health}\n')
 
 
-# Function for object detection
-def identify_objects_yolo(frame):
-    height, width, channels = frame.shape
-
-    # Detecting objects
-    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
-    net.setInput(blob)
-    outs = net.forward(output_layers)
-
-    # Information to show on the screen
-    class_ids = []
-    confidences = []
-    boxes = []
-
-    # Extract information from outs
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-
-            if confidence > 0.5:
-                # Object detected
-                center_x = int(detection[0] * width)
-                center_y = int(detection[1] * height)
-                w = int(detection[2] * width)
-                h = int(detection[3] * height)
-
-                # Rectangle coordinates
-                x = int(center_x - w / 2)
-                y = int(center_y - h / 2)
-
-                boxes.append([x, y, w, h])
-                confidences.append(float(confidence))
-                class_ids.append(class_id)
-
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
-
-    # Draw rectangles and labels on the objects detected
-    for i in range(len(boxes)):
-        if i in indexes:
-            x, y, w, h = boxes[i]
-            label = str(class_ids[i])
-            confidence = confidences[i]
-            color = (0, 255, 0)  # Green color for pests and rodents
-
-            # Draw rectangle and label
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1, color, 2)
-
-    return frame
-
-
+# # Function for object detection
+# def identify_objects_yolo(frame):
+#     height, width, channels = frame.shape
+#
+#     # Detecting objects
+#     blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+#     net.setInput(blob)
+#     outs = net.forward(output_layers)
+#
+#     # Information to show on the screen
+#     class_ids = []
+#     confidences = []
+#     boxes = []
+#
+#     # Extract information from outs
+#     for out in outs:
+#         for detection in out:
+#             scores = detection[5:]
+#             class_id = np.argmax(scores)
+#             confidence = scores[class_id]
+#
+#             if confidence > 0.5:
+#                 # Object detected
+#                 center_x = int(detection[0] * width)
+#                 center_y = int(detection[1] * height)
+#                 w = int(detection[2] * width)
+#                 h = int(detection[3] * height)
+#
+#                 # Rectangle coordinates
+#                 x = int(center_x - w / 2)
+#                 y = int(center_y - h / 2)
+#
+#                 boxes.append([x, y, w, h])
+#                 confidences.append(float(confidence))
+#                 class_ids.append(class_id)
+#
+#     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+#
+#     # Draw rectangles and labels on the objects detected
+#     for i in range(len(boxes)):
+#         if i in indexes:
+#             x, y, w, h = boxes[i]
+#             label = str(class_ids[i])
+#             confidence = confidences[i]
+#             color = (0, 255, 0)  # Green color for pests and rodents
+#
+#             # Draw rectangle and label
+#             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+#             cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1, color, 2)
+#
+#     return frame
 # Function to control the drone
 def drone_control_thread():
+    drone.takeoff()
+    drone.set_speed(50)
     while True:
         drone.send_rc_control(0, 0, 0, 0)
 
@@ -130,7 +130,7 @@ def on_key_release():
 
 def take_off():
     drone.takeoff()
-    drone.set_speed(35)
+    drone.set_speed(50)
 
 
 def on_key_press(event):
@@ -138,25 +138,25 @@ def on_key_press(event):
 
     print(drone.get_battery())
 
-    if key == 'w':
-        drone.send_rc_control(0, 0, 35, 0)  # Move up when
-    elif key == 's':
-        drone.send_rc_control(0, 0, -35, 0)  # Move down when
+    if key == '8':
+        drone.send_rc_control(0, 0, 50, 0)  # Move up when
+    elif key == '2':
+        drone.send_rc_control(0, 0, -50, 2)  # Move down when
     elif key == 'z':
         drone.flip_forward()
-    elif key == 'UP':
-        drone.send_rc_control(0, -35, 0, 0)
-    elif key == 'DOWN':
-        drone.send_rc_control(0, 35, 0, 0)
-    elif key == 'q':
+    elif key == '4':
+        drone.send_rc_control(0, -75, 0, 0)
+    elif key == '6':
+        drone.send_rc_control(0, 75, 0, 0)
+    elif key == '9':
         drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
-    elif key == 'e':
+    elif key == '7':
         drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
-    elif key == 't':
+    elif key == '0':
         take_off()
-    elif key == 'z':
+    elif key == '5':
         drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
-    elif key == 'l':
+    elif key == '.':
         drone.land()  # Land when spacebar is pressed
 
 
@@ -175,7 +175,9 @@ root.bind("<KeyPress>", on_key_press)
 root.bind("<KeyRelease>", on_key_release)
 root.title("Agri~Drone")
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-
+copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
+                           font=("Times New Roman", 14, "bold italic"))
+copyright_label.pack()
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
 
@@ -195,7 +197,7 @@ def update_video():
     # Update the label with the new frame
     video_label.img = img
     video_label.config(image=img)
-    root.after(3, update_video)
+    root.after(60, update_video)
 
 
 def identify_pests_or_diseases(image):
@@ -210,7 +212,7 @@ def start_ndvi_stream():
     def update_ndvi_video():
         frame = drone.get_frame_read().frame
         processed_frame = process_frame(frame)
-        processed_frame = identify_objects_yolo(processed_frame)
+        # processed_frame = identify_objects_yolo(processed_frame)
 
         # Calculate and visualize NDVI
         ndvi_image = calculate_and_visualize_ndvi(processed_frame)
@@ -388,46 +390,40 @@ def close_application():
     root.destroy()
 
 
-def open_application():
-    subprocess.Popen(["python", "Report&Analysis.py"])
-    root.destroy()
-
-
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.grid(row=0, column=0, padx=10, pady=10)  # Place the button at row 0, column 0 with padding
+video_button.pack()
 
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.grid(row=0, column=1, padx=10, pady=10)  # Place the button at row 0, column 1 with padding
+ndvi_button.pack()  # Place the button at row 0, column 1 with padding
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
-analyze_button.grid(row=0, column=2, padx=10, pady=10)  # Place the button at row 0, column 2 with padding
+analyze_button.pack()  # Place the button at row 0, column 2 with padding
 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
-report_button.grid(row=0, column=3, padx=10, pady=10)  # Place the button at row 0, column 3 with padding
+report_button.pack()  # Place the button at row 0, column 3 with padding
 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.grid(row=0, column=4, padx=10, pady=10)  # Place the button at row 0, column 4 with padding
-
+logout_button.pack()  # Place the button at row 0, column 4 with padding                                                                             wwwwwwwwwwwwwwwwwwwwwwaw
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
-analysis_label.grid(row=1, column=0, columnspan=5, pady=10)  # Span the label across all columns with padding
+analysis_label.pack()  # Span the label across all columns with padding
 
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
 video_label.pack()
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=("Times New Roman", 14, "bold italic"))
+
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 
-# Start both threads
+# Start the tkinter main loop (window will open here)
+root.mainloop()
+
+# Start both threads after tkinter window is closed
 video_thread.start()
 drone_thread.start()
-
-root.mainloop()
