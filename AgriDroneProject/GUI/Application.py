@@ -12,12 +12,7 @@ root.title("Agri~Drone")
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 BUTTON_COLOR = "#4CAF50"
 # Create a connection to the database
-conn_str = (
-    r'DRIVER={SQL Server Native Client 11.0};'
-    r'SERVER=local\SQLEXPRESS;'
-    r'DATABASE=AgriDrone;'
-    r'Trusted_Connection=yes;'
-)
+conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 
 conn = pyodbc.connect(conn_str)
 cursor = conn.cursor()
@@ -94,7 +89,7 @@ crop_combobox.set("Select Crop Type")
 crop_label.pack()
 crop_combobox.pack()
 
-crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application, bg=BUTTON_COLOR, fg="white")
+crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application)
 crop_assessment_button.pack()
 # Create a button to fetch and display weather forecast
 weather_button = ttk.Button(root, text="Check Weather Forecast", command=display_weather_forecast)

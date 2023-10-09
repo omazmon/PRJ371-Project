@@ -1,4 +1,3 @@
-import subprocess
 import threading
 from future.moves.tkinter import messagebox
 import tkinter as tk
@@ -388,11 +387,6 @@ def process_frame(frame):
 def close_application():
     drone.land()
     messagebox.showinfo("LogOut successful!", "AgriDrone disconnected and Goodbye")
-    root.destroy()
-
-
-def open_application():
-    subprocess.Popen(["python", "Report&Analysis.py"])
     root.destroy()
 
 
