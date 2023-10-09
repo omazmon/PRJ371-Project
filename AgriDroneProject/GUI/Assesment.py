@@ -144,13 +144,13 @@ def on_key_press(event):
         drone.send_rc_control(0, 0, -50, 2)  # Move down when
     elif key == 'z':
         drone.flip_forward()
-    elif key == 'LEFT':
+    elif key == '4':
         drone.send_rc_control(0, -75, 0, 0)
-    elif key == 'RIGHT':
+    elif key == '6':
         drone.send_rc_control(0, 75, 0, 0)
-    elif key == 'UP':
+    elif key == '8':
         drone.send_rc_control(0, 50, 0, 0)
-    elif key == 'DOWN':
+    elif key == '2':
         drone.send_rc_control(0, -50, 0, 0)
     elif key == 'e':
         drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
