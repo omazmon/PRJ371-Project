@@ -148,9 +148,9 @@ def on_key_press(event):
         drone.send_rc_control(-75, 0, 0, 0)
     elif key == '6':
         drone.send_rc_control(75, 0, 0, 0)
-    elif key == '9':
-        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
     elif key == '7':
+        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
+    elif key == '9':
         drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
     elif key == '0':
         take_off()
@@ -224,7 +224,7 @@ def start_ndvi_stream():
         # Update the label with the new NDVI image
         video_label.img = ndvi_image
         video_label.config(image=ndvi_image)
-        root.after(3, update_ndvi_video)
+        root.after(60, update_ndvi_video)
 
     # Start updating the video with NDVI frames
     update_ndvi_video()
@@ -396,11 +396,11 @@ def close_application():
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.pack(paddy=30)
+video_button.pack()
 
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.pack(paddy=40)  # Place the button at row 0, column 1 with padding
+ndvi_button.pack()
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
