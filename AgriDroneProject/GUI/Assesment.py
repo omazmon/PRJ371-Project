@@ -9,7 +9,8 @@ from djitellopy import Tello
 from PIL import Image, ImageTk
 import pyodbc
 import os
-
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 #
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
@@ -298,6 +299,19 @@ def capture_and_analyze():
         crop_health = analyze_crop_health(ndvi_value)
         create_report(crop_health)
         pests_or_diseases_result = identify_pests_or_diseases(frame)
+
+        pdf_file_path = os.path.join(captured_images_directory, "report.pdf")
+        c = canvas.Canvas(pdf_file_path, pagesize=letter)
+
+        # Add report content
+        c.setFont("Helvetica", 12)
+        c.drawString(100, 700, "Crop Health Report")
+        c.drawString(100, 680, f"NDVI Value: {ndvi_value}")
+        c.drawString(100, 660, f"Crop Health: {crop_health}")
+        c.drawString(100, 640, f"Pests or Diseases: {pests_or_diseases_result}")
+
+        # Close the PDF
+        c.save()
 
         # Save the original frame
         original_image_path = os.path.join(captured_images_directory, "original_frame.jpg")
