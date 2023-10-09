@@ -2,7 +2,7 @@ import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
-from PIL import Image, ImageTk
+
 
 # Create the main application window
 root = tk.Tk()
@@ -12,9 +12,7 @@ root.title("Agri~Drone")
 BG_COLOR = "#C0C0C0"
 LABEL_COLOR = "#333333"
 BUTTON_COLOR = "#4CAF50"
-# Load the background image
-background_image = Image.open("background-image.jpg")
-background_photo = ImageTk.PhotoImage(background_image)
+
 # Set the window size to a fixed size for better appearance
 root.geometry("400x300")
 

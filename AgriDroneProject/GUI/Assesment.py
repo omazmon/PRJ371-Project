@@ -1,3 +1,4 @@
+import atexit
 import threading
 from future.moves.tkinter import messagebox
 import tkinter as tk
@@ -6,7 +7,16 @@ from tkinter import messagebox
 import numpy as np
 from djitellopy import Tello
 from PIL import Image, ImageTk
+import pyodbc
+import os
 
+#
+captured_images_directory = "captured_images"
+os.makedirs(captured_images_directory, exist_ok=True)
+
+conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
+conn = pyodbc.connect(conn_str)
+cursor = conn.cursor()
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
@@ -288,15 +298,29 @@ def capture_and_analyze():
         crop_health = analyze_crop_health(ndvi_value)
         create_report(crop_health)
         pests_or_diseases_result = identify_pests_or_diseases(frame)
-        # object_detected_frame = identify_objects(frame)
+
+        # Save the original frame
+        original_image_path = os.path.join(captured_images_directory, "original_frame.jpg")
+        cv2.imwrite(original_image_path, frame)
+
+        # Save the NDVI image
+        ndvi_image_path = os.path.join(captured_images_directory, "ndvi_map.jpg")
+        cv2.imwrite(ndvi_image_path, ndvi_value)
+
+        # Save the pests or diseases detection result
+        pests_or_diseases_path = os.path.join(captured_images_directory, "pests_or_diseases_result.jpg")
+        cv2.imwrite(pests_or_diseases_path, pests_or_diseases_result * 255)
+
+        # Insert image paths into the 'images' table
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)",
+                       ("pests_or_diseases", pests_or_diseases_path))
+        conn.commit()
 
         cv2.imshow("Original Image", frame)
-        cv2.imshow("NDVI", receive_ndvi_map())
+        cv2.imshow("NDVI", ndvi_value)
         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-        # cv2.imshow("Object Detection", object_detected_frame)
-        #
-        # analysis_label.config(text=f"Analysis: Crop Condition - {crop_condition}")
-
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
@@ -304,6 +328,8 @@ def capture_and_analyze():
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
+
+atexit.register(conn.close)
 
 # top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # crop_colors = {
@@ -425,6 +451,7 @@ video_label.pack()
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 
+atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
 root.mainloop()
 
