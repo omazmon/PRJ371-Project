@@ -138,25 +138,25 @@ def on_key_press(event):
 
     print(drone.get_battery())
 
-    if key == '8':
+    if key == 'w':
         drone.send_rc_control(0, 0, 50, 0)  # Move up when
-    elif key == '2':
+    elif key == 's':
         drone.send_rc_control(0, 0, -50, 2)  # Move down when
     elif key == 'z':
         drone.flip_forward()
-    elif key == '4':
+    elif key == 'LEFT':
         drone.send_rc_control(0, -75, 0, 0)
-    elif key == '6':
+    elif key == 'RIGHT':
         drone.send_rc_control(0, 75, 0, 0)
-    elif key == '9':
+    elif key == 'e':
         drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
-    elif key == '7':
+    elif key == 'q':
         drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
-    elif key == '0':
+    elif key == 't':
         take_off()
     elif key == '5':
         drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
-    elif key == '.':
+    elif key == 'l':
         drone.land()  # Land when spacebar is pressed
 
 
