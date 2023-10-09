@@ -396,11 +396,11 @@ def close_application():
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.pack()
+video_button.pack(paddy=30)
 
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.pack()  # Place the button at row 0, column 1 with padding
+ndvi_button.pack(paddy=40)  # Place the button at row 0, column 1 with padding
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
