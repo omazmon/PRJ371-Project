@@ -89,27 +89,6 @@ def open_dronedata():
     else:
         messagebox.showerror("Error", "Please select a city, enter a farm name, and select a crop type.")
 
-#
-# def open_dronedata():
-#     selected_province = location_combobox.get()
-#     farm_name = farm_name_combobox.get()  # Get the farm name from the combobox
-#     selected_crop = crop_combobox.get()  # Get the selected crop type
-#     if selected_province != "Please select province" and farm_name and selected_crop:
-#
-#         api_key = '06e1969da55a4b51d0b4447dcd9c92eb'
-#         weather_api_url = f'http://api.openweathermap.org/data/2.5/weather?q={selected_province}&appid={api_key}&units=metric'
-#         response = requests.get(weather_api_url)
-#         if response.status_code == 200:
-#             weather_data = response.json()
-#             temperature = weather_data['main']['temp']
-#             humidity = weather_data['main']['humidity']
-#             description = weather_data['weather'][0]['description']
-#             return f"Temperature: {temperature}°C, Humidity: {humidity}%, Description: {description}"
-#         else:
-#             return "Failed to fetch weather data"
-#     else:
-#         messagebox.showerror("Error", "Please select a province, enter a farm name, and select a crop type.")
-
 
 # Function to display weather forecast
 def display_weather_forecast():

@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import messagebox
 import bcrypt
 
-
 # Create the main application window
 root = tk.Tk()
 root.title("Agri~Drone")
@@ -14,7 +13,7 @@ LABEL_COLOR = "#333333"
 BUTTON_COLOR = "#4CAF50"
 
 # Set the window size to a fixed size for better appearance
-root.geometry("400x300")
+root.geometry("400x360")
 
 
 # Function to open the Application.py
@@ -53,8 +52,10 @@ def login():
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
 
-label_Welcome = tk.Label(root, text="Login", font=("Times New Roman", 20, "bold italic"))
-label_Welcome.pack(pady=10)
+label_Welcome = tk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 20, "bold italic"))
+label_Welcome.pack()
+label_Login = tk.Label(root, text="Please Login!", font=("Times New Roman", 20, "bold italic"))
+label_Login.pack(pady=10)
 label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
 label_username.pack(pady=10)
 entry_username = tk.Entry(root)

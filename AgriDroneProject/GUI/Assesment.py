@@ -11,6 +11,7 @@ import pyodbc
 import os
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+
 #
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
@@ -153,8 +154,10 @@ def on_key_press(event):
         drone.send_rc_control(0, 0, 50, 0)  # Move up when
     elif key == '2':
         drone.send_rc_control(0, 0, -50, 2)  # Move down when
-    elif key == 'z':
+    elif key == '+':
         drone.flip_forward()
+    elif key == '-':
+        drone.flip_back()
     elif key == '4':
         drone.send_rc_control(-75, 0, 0, 0)
     elif key == '6':
@@ -326,9 +329,9 @@ def capture_and_analyze():
         cv2.imwrite(pests_or_diseases_path, pests_or_diseases_result * 255)
 
         # Insert image paths into the 'images' table
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)",
+        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
+        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
+        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)",
                        ("pests_or_diseases", pests_or_diseases_path))
         conn.commit()
 
@@ -344,6 +347,7 @@ def capture_and_analyze():
 
 
 atexit.register(conn.close)
+
 
 # top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # crop_colors = {
@@ -434,25 +438,29 @@ def close_application():
     root.destroy()
 
 
+buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
+buttons_frame.pack(side=tk.TOP, fill=tk.X)  # Pack the frame at the top of the window and fill it horizontally
+
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.pack()
+video_button.pack(side=tk.LEFT, padx=10)
 
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.pack()
+ndvi_button.pack(side=tk.LEFT, padx=10)
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
-analyze_button.pack()  # Place the button at row 0, column 2 with padding
+analyze_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 2 with padding
 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
-report_button.pack()  # Place the button at row 0, column 3 with padding
+report_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 3 with padding
 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack()  # Place the button at row 0, column 4 with padding                                                                             wwwwwwwwwwwwwwwwwwwwwwaw
+logout_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 4 with padding
+#                                                                        wwwwwwwwwwwwwwwwwwwwwwaw
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
 analysis_label.pack()  # Span the label across all columns with padding
