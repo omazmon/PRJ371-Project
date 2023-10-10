@@ -1,5 +1,7 @@
 import atexit
 import threading
+import time
+
 from future.moves.tkinter import messagebox
 import tkinter as tk
 import cv2
@@ -438,6 +440,24 @@ def close_application():
     root.destroy()
 
 
+def check_battery():
+    battery_level = drone.get_battery()
+    battery_label.config(text=f"Current Battery Level: {battery_level}%")
+    # Low battery warning
+    if battery_level < 20:
+        battery_label.config(text="Low Battery Warning! Returning to Base.")
+        # Automatic return to base
+        drone.land()
+        time.sleep(5)
+
+
+# Check battery level every 60 seconds
+def check_battery_periodically():
+    while True:
+        check_battery()
+        time.sleep(60)
+
+
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)  # Pack the frame at the top of the window and fill it horizontally
 
@@ -459,8 +479,10 @@ report_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 3
 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 4 with padding
-#                                                                        wwwwwwwwwwwwwwwwwwwwwwaw
+logout_button.pack(side=tk.LEFT, padx=10)
+
+battery_label = tk.Label(root, text="")
+battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
 analysis_label.pack()  # Span the label across all columns with padding
@@ -472,6 +494,7 @@ video_label.pack()
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
+battery_thread = threading.Thread(target=check_battery_periodically)
 
 atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
@@ -480,3 +503,4 @@ root.mainloop()
 # Start both threads after tkinter window is closed
 video_thread.start()
 drone_thread.start()
+battery_thread.start()

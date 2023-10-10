@@ -1,3 +1,4 @@
+from datetime import datetime
 import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -124,6 +125,10 @@ def display_weather_forecast():
     weather_forecast = open_dronedata()
     messagebox.showinfo("Weather Forecast", weather_forecast)
 
+def update_date_time():
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_time_label.config(text=f"{current_time}")
+    root.after(1000, update_date_time)
 
 def close_application():
     subprocess.Popen(["python", "Assesment.py"])
@@ -137,8 +142,13 @@ provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", 
 # Create a list of top 5 farming crops in South Africa
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
-welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 14, "bold"))
+welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"))
 welcome_label.pack()
+
+
+# Create a label to display the current date and time
+date_time_label = ttk.Label(root, text="")
+date_time_label.pack()
 
 farm_name_label = ttk.Label(root, text="Farm Name:")
 farm_name_label.pack()
@@ -174,5 +184,6 @@ copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))
 copyright_label.pack()
 # Start the GUI main loop
+update_date_time()
 show_warning()
 root.mainloop()
