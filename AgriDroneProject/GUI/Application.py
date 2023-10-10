@@ -8,7 +8,11 @@ from PIL import Image, ImageTk
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Agri~Drone")
-
+warning_message = """
+Please Note:
+- Enter accurate data for the most optimal assessment.
+- Use the application responsibly and follow ethical guidelines.
+"""
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 BUTTON_COLOR = "#4CAF50"
@@ -62,7 +66,8 @@ cities = [
     "Welkom",
     # Add more South African cities as needed
 ]
-
+def show_warning():
+    messagebox.showwarning("Warning", warning_message)
 
 def open_dronedata():
     selected_city = city_combobox.get()
@@ -85,7 +90,12 @@ def open_dronedata():
                 elif 30 < temperature <= 35:
                     return "Moderate risk of pest and disease outbreak. Monitor the crops closely."
                 elif temperature > 35:
-                    return "High risk of pest and disease outbreak. Take immediate action to prevent damage."
+                    return "High risk of pest and disease outbreak. Take immediate action to prevent damage. Consider the following:\n" \
+                           "- Increase irrigation to keep plants hydrated.\n" \
+                           "- Apply appropriate pesticides or natural remedies recommended for the specific pests in your area.\n" \
+                           "- Remove and destroy affected plants to prevent the spread of diseases.\n" \
+                           "- Seek advice from local agricultural experts or extension services for specific recommendations."
+
                 else:
                     return "Temperature too low for significant pest and disease activity."
 
@@ -93,7 +103,7 @@ def open_dronedata():
             messagebox.showinfo("Pest and Disease Prediction", pest_outbreak_prediction)
             if 'rain' in description.lower() or 'drizzle' in description.lower() or 'shower' in description.lower():
                 messagebox.showwarning("Weather Warning", "It's raining! Drone operation is not allowed.")
-                return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nIt's raining!"
+                return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nIt's raining can not operate the drone in these conditions!"
             elif wind_speed > 13:
                 messagebox.showwarning("Caution",
                                        f"Wind speed is {wind_speed} m/s. Exercise caution while operating the drone.")
@@ -102,7 +112,7 @@ def open_dronedata():
             else:
                 crop_assessment_button.config(
                     state="normal")  # Enable the button if it's not raining and wind speed is safe
-                return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nIt's safe to operate."
+                return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nThe drone is safe to operate."
         else:
             return "Failed to fetch weather data"
     else:
@@ -164,4 +174,5 @@ copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))
 copyright_label.pack()
 # Start the GUI main loop
+show_warning()
 root.mainloop()
