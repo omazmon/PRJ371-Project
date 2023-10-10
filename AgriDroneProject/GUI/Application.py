@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import pyodbc
 import requests
 from PIL import Image, ImageTk
+
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Agri~Drone")
@@ -16,6 +17,7 @@ background_image = Image.open("background-image.jpg")
 background_photo = ImageTk.PhotoImage(background_image)
 background_label = tk.Label(root, image=background_photo)
 background_label.place(relwidth=1, relheight=1)
+
 # Create a connection to the database
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
@@ -60,6 +62,8 @@ cities = [
     "Welkom",
     # Add more South African cities as needed
 ]
+
+
 def open_dronedata():
     selected_city = city_combobox.get()
     farm_name = farm_name_combobox.get()
@@ -74,15 +78,30 @@ def open_dronedata():
             humidity = weather_data['main']['humidity']
             wind_speed = weather_data['wind']['speed']
             description = weather_data['weather'][0]['description']
+
+            def predict_pest_outbreak(temperature):
+                if 20 <= temperature <= 30:
+                    return "Low risk of pest and disease outbreak."
+                elif 30 < temperature <= 35:
+                    return "Moderate risk of pest and disease outbreak. Monitor the crops closely."
+                elif temperature > 35:
+                    return "High risk of pest and disease outbreak. Take immediate action to prevent damage."
+                else:
+                    return "Temperature too low for significant pest and disease activity."
+
+            pest_outbreak_prediction = predict_pest_outbreak(temperature)
+            messagebox.showinfo("Pest and Disease Prediction", pest_outbreak_prediction)
             if 'rain' in description.lower() or 'drizzle' in description.lower() or 'shower' in description.lower():
                 messagebox.showwarning("Weather Warning", "It's raining! Drone operation is not allowed.")
                 return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nIt's raining!"
             elif wind_speed > 13:
-                messagebox.showwarning("Caution", f"Wind speed is {wind_speed} m/s. Exercise caution while operating the drone.")
+                messagebox.showwarning("Caution",
+                                       f"Wind speed is {wind_speed} m/s. Exercise caution while operating the drone.")
                 crop_assessment_button.config(state="normal")  # Enable the button despite caution
                 return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nExercise caution."
             else:
-                crop_assessment_button.config(state="normal")  # Enable the button if it's not raining and wind speed is safe
+                crop_assessment_button.config(
+                    state="normal")  # Enable the button if it's not raining and wind speed is safe
                 return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nIt's safe to operate."
         else:
             return "Failed to fetch weather data"
