@@ -6,6 +6,41 @@ from tkinter import ttk, messagebox
 import pyodbc
 import requests
 from PIL import Image, ImageTk
+import random
+from nltk.chat.util import Chat, reflections
+
+# Define patterns and responses for the chatbot
+patterns = [
+    (r'(.*)agricultural drone(.*)',
+     [
+         "Agricultural drones are used in farming to monitor crop health, optimize irrigation, and assess crop yield. They use various sensors and cameras to collect data."]),
+    (r'(.*)work(.*)drone(.*)',
+     [
+         "Agricultural drones work by flying over farmland and capturing data using sensors and cameras. This data is then used by farmers to make informed decisions about their crops."]),
+    (r'(.*)benefits(.*)agricultural drone(.*)',
+     [
+         "The benefits of agricultural drones include increased efficiency, better crop management, reduced costs, and improved yields due to data-driven decision-making."]),
+    (r'(.*)sensors(.*)agricultural drone(.*)',
+     [
+         "Agricultural drones are equipped with various sensors such as multispectral cameras, thermal cameras, and LiDAR sensors. These sensors help in capturing different types of data related to crops."]),
+    (r'(.*)future(.*)agricultural drone(.*)',
+     [
+         "The future of agricultural drones looks promising, with advancements in AI and machine learning. Drones will continue to play a vital role in precision agriculture and sustainable farming practices."]),
+    (r'(.*)thank you(.*)',
+     ["You're welcome! If you have more questions, feel free to ask."]),
+]
+
+# Create a chatbot using the patterns and reflections
+chatbot = Chat(patterns, reflections)
+
+
+# Function to start the chatbot when the checkbox is checked
+def start_chat():
+    if checkbox_var.get() == 1:
+        get_response()
+    else:
+        messagebox.showinfo("Error", "Please check the checkbox to start the chatbot.")
+
 
 # Create a Tkinter window
 root = tk.Tk()
@@ -68,8 +103,11 @@ cities = [
     "Welkom",
     # Add more South African cities as needed
 ]
+
+
 def show_warning():
     messagebox.showwarning("Warning", warning_message)
+
 
 def open_dronedata():
     selected_city = city_combobox.get()
@@ -126,10 +164,12 @@ def display_weather_forecast():
     weather_forecast = open_dronedata()
     messagebox.showinfo("Weather Forecast", weather_forecast)
 
+
 def update_date_time():
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     date_time_label.config(text=f"{current_time}")
     root.after(1000, update_date_time)
+
 
 def close_application():
     subprocess.Popen(["python", "Assesment.py"])
@@ -137,16 +177,24 @@ def close_application():
     root.destroy()
 
 
+# Function to handle user input and get chatbot response
+def get_response():
+    if checkbox_var.get() == 1:
+        user_input = input_box.get()
+        response = chatbot.respond(user_input)
+        messagebox.showinfo("Chatbot Response", random.choice(response))
+    else:
+        messagebox.showinfo("Error", "Please check the checkbox to start the chatbot.")
+
+
 # Create a list of provinces in South Africa
 provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
              "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
 
-# Create a list of top 5 farming crops in South Africa
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
 welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"))
 welcome_label.pack()
-
 
 # Create a label to display the current date and time
 date_time_label = ttk.Label(root, text="")
@@ -182,6 +230,17 @@ weather_button.pack()
 
 crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application, state="disabled")
 crop_assessment_button.pack()
+
+checkbox_var = tk.IntVar()
+checkbox = tk.Checkbutton(root, text="Start Chatbot", variable=checkbox_var)
+checkbox.pack()
+
+input_box = tk.Entry(root, width=50)
+input_box.pack(pady=20)
+
+# Bind the Enter key to get_response function
+input_box.bind("<Return>", lambda event=None: get_response())
+
 copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))
 copyright_label.pack()

@@ -25,6 +25,9 @@ drone = Tello()
 drone.connect()
 drone.streamon()
 
+total_days = 0
+total_growth = 0
+
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
@@ -207,6 +210,8 @@ takeoff_button.pack(pady=20)
 
 crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
 crop_health_label.pack()
+
+
 # Function to update video until connection is established
 def update_video():
     frame = drone.get_frame_read().frame  # Get frame from the drone's camera
@@ -462,6 +467,51 @@ def check_battery_periodically():
         time.sleep(5)
 
 
+# Crop class for simulating crop growth
+class Crop:
+    def __init__(self, growth_rate, initial_height=0):
+        self.growth_rate = growth_rate  # Growth rate in cm per day
+        self.height = initial_height  # Initial height of the crop in cm
+
+    def grow(self, days):
+        # Simulate crop growth for a specific number of days
+        growth = self.growth_rate * days
+        self.height += growth
+        return growth
+
+
+crop = Crop(2)
+
+
+# Function to update crop growth labels
+def update_labels():
+    global total_days, total_growth
+    # Simulate crop growth for 1 day
+    growth = crop.grow(1)
+    total_days += 1
+    total_growth += growth
+
+    # Update labels with crop growth information
+    average_height_label.config(text=f"Average Height: {crop.height / total_days:.2f} cm")
+    current_size_label.config(text=f"Current Size: {crop.height} cm")
+    daily_growth_label.config(text=f"Daily Growth: {growth} cm")
+    weekly_growth_label.config(text=f"Weekly Growth: {total_growth} cm")
+    expected_size_label.config(text=f"Expected Size: {crop.height} cm")
+
+    # Update labels every 1000 milliseconds (1 second)
+    root.after(1000, update_labels)
+
+
+# Function to start crop growth simulation
+def cropgrowth():
+    global total_days, total_growth
+    total_days = 0
+    total_growth = 0
+    update_labels()
+
+
+cropgrowth()
+
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)  # Pack the frame at the top of the window and fill it horizontally
 
@@ -492,6 +542,22 @@ battery_label.pack()
 analysis_label = tk.Label(root, text="Analysis:")
 analysis_label.pack()  # Span the label across all columns with padding
 
+# Labels for displaying crop growth information
+average_height_label = tk.Label(root, text="Average Height: ")
+average_height_label.pack()
+
+current_size_label = tk.Label(root, text="Current Size: ")
+current_size_label.pack()
+
+daily_growth_label = tk.Label(root, text="Daily Growth: ")
+daily_growth_label.pack()
+
+weekly_growth_label = tk.Label(root, text="Weekly Growth: ")
+weekly_growth_label.pack()
+
+expected_size_label = tk.Label(root, text="Expected Size: ")
+expected_size_label.pack()
+
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
 video_label.pack()
@@ -508,3 +574,4 @@ root.mainloop()
 video_thread.start()
 drone_thread.start()
 battery_thread.start()
+drone.streamoff()
