@@ -1,4 +1,5 @@
 import subprocess
+import time
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
@@ -47,6 +48,7 @@ def login():
     if user_role:
         messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
         open_application()
+        time.sleep(5)
         root.destroy()
     else:
         messagebox.showerror("Error", "Invalid credentials. Please try again.")

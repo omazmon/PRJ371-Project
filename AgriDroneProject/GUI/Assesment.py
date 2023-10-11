@@ -1,7 +1,6 @@
 import atexit
 import threading
 import time
-
 from future.moves.tkinter import messagebox
 import tkinter as tk
 import cv2
@@ -35,10 +34,17 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 # layer_names = net.getLayerNames()
 # output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 #
-
 def create_report(crop_health):
-    with open('crop_health_report.txt', 'a') as file:
-        file.write(f'Crop Health: {crop_health}\n')
+    try:
+        with open('crop_health_report.txt', 'a') as file:
+            file.write(f'Crop Health: {crop_health}\n')
+
+        # Update the Tkinter label with the crop health information
+        crop_health_label.config(text=f"Crop Health: {crop_health}")
+    except Exception as e:
+        print(f"Error in create_report: {e}")
+        # Handle the error, e.g., show an error message in Tkinter messagebox
+        tk.messagebox.showerror("Error", f"Error in create_report: {e}")
 
 
 # # Function for object detection
@@ -94,8 +100,6 @@ def create_report(crop_health):
 #     return frame
 # Function to control the drone
 def drone_control_thread():
-    drone.takeoff()
-    drone.set_speed(50)
     while True:
         drone.send_rc_control(0, 0, 0, 0)
 
@@ -201,7 +205,8 @@ copyright_label.pack()
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
 
-
+crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
+crop_health_label.pack()
 # Function to update video until connection is established
 def update_video():
     frame = drone.get_frame_read().frame  # Get frame from the drone's camera
@@ -442,7 +447,6 @@ def close_application():
 
 def check_battery():
     battery_level = drone.get_battery()
-    battery_label.config(text=f"Current Battery Level: {battery_level}%")
     # Low battery warning
     if battery_level < 20:
         battery_label.config(text="Low Battery Warning! Returning to Base.")
@@ -455,7 +459,7 @@ def check_battery():
 def check_battery_periodically():
     while True:
         check_battery()
-        time.sleep(60)
+        time.sleep(5)
 
 
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
@@ -463,25 +467,26 @@ buttons_frame.pack(side=tk.TOP, fill=tk.X)  # Pack the frame at the top of the w
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.pack(side=tk.LEFT, padx=10)
+video_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.pack(side=tk.LEFT, padx=10)
+ndvi_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button to trigger the analysis
 analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
-analyze_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 2 with padding
+
+analyze_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
-report_button.pack(side=tk.LEFT, padx=10)  # Place the button at row 0, column 3 with padding
+report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack(side=tk.LEFT, padx=10)
+logout_button.pack(side=tk.LEFT, padx=5)
 
-battery_label = tk.Label(root, text="")
+battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
 battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
@@ -495,7 +500,6 @@ video_label.pack()
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 battery_thread = threading.Thread(target=check_battery_periodically)
-
 atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
 root.mainloop()

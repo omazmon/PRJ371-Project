@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 import subprocess
 import tkinter as tk
@@ -132,6 +133,7 @@ def update_date_time():
 
 def close_application():
     subprocess.Popen(["python", "Assesment.py"])
+    time.sleep(7)
     root.destroy()
 
 
