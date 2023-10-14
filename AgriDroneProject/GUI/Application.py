@@ -180,7 +180,7 @@ def close_application():
 # Function to handle user input and get chatbot response
 def get_response():
     if checkbox_var.get() == 1:
-        user_input = input_box.get()
+        user_input = "hey"
         response = chatbot.respond(user_input)
         messagebox.showinfo("Chatbot Response", random.choice(response))
     else:
@@ -235,11 +235,6 @@ checkbox_var = tk.IntVar()
 checkbox = tk.Checkbutton(root, text="Start Chatbot", variable=checkbox_var)
 checkbox.pack()
 
-input_box = tk.Entry(root, width=50)
-input_box.pack(pady=20)
-
-# Bind the Enter key to get_response function
-input_box.bind("<Return>", lambda event=None: get_response())
 
 copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))

@@ -207,9 +207,18 @@ copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
 copyright_label.pack()
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
-
+buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
+buttons_frame.pack(side=tk.TOP, fill=tk.X)  
+battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
+battery_label.pack()
+# Create a label for the analysis
+analysis_label = tk.Label(root, text="Analysis:")
+analysis_label.pack()  # Span the label across all columns with padding
 crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
 crop_health_label.pack()
+# Create a label for displaying the video feed
+video_label = tk.Label(root)
+video_label.pack()
 
 
 # Function to update video until connection is established
@@ -467,53 +476,43 @@ def check_battery_periodically():
         time.sleep(5)
 
 
-# Crop class for simulating crop growth
-class Crop:
-    def __init__(self, growth_rate, initial_height=0):
-        self.growth_rate = growth_rate  # Growth rate in cm per day
-        self.height = initial_height  # Initial height of the crop in cm
+def analyze_crop_growth(previous_image_path, current_image_path):
+    # Load previous and current images
+    previous_image = cv2.imread(previous_image_path)
+    current_image = cv2.imread(current_image_path)
 
-    def grow(self, days):
-        # Simulate crop growth for a specific number of days
-        growth = self.growth_rate * days
-        self.height += growth
-        return growth
+    diff_image = cv2.absdiff(previous_image, current_image)
 
+    # Count non-zero pixels (changed pixels) to calculate growth area
+    changed_pixel_count = np.count_nonzero(diff_image)
 
-crop = Crop(2)
+    # Calculate growth percentage based on changed pixel count
+    total_pixels = 2 * 1
+    growth_percentage = (changed_pixel_count / total_pixels) * 100
 
-
-# Function to update crop growth labels
-def update_labels():
-    global total_days, total_growth
-    # Simulate crop growth for 1 day
-    growth = crop.grow(1)
-    total_days += 1
-    total_growth += growth
-
-    # Update labels with crop growth information
-    average_height_label.config(text=f"Average Height: {crop.height / total_days:.2f} cm")
-    current_size_label.config(text=f"Current Size: {crop.height} cm")
-    daily_growth_label.config(text=f"Daily Growth: {growth} cm")
-    weekly_growth_label.config(text=f"Weekly Growth: {total_growth} cm")
-    expected_size_label.config(text=f"Expected Size: {crop.height} cm")
-
-    # Update labels every 1000 milliseconds (1 second)
-    root.after(1000, update_labels)
+    return growth_percentage
 
 
-# Function to start crop growth simulation
-def cropgrowth():
-    global total_days, total_growth
-    total_days = 0
-    total_growth = 0
-    update_labels()
+def calculate_crop_area(image):
+    # Implement logic to calculate crop area based on image processing
+
+    # Example: Find contours and calculate area
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    total_area = 0
+    for contour in contours:
+        total_area += cv2.contourArea(contour)
+
+    return total_area
 
 
-cropgrowth()
+previous_image = cv2.imread("previous_crop_image.jpg")
+current_image = cv2.imread("current_crop_image.jpg")
 
-buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
-buttons_frame.pack(side=tk.TOP, fill=tk.X)  # Pack the frame at the top of the window and fill it horizontally
+growth_percentage = analyze_crop_growth(previous_image, current_image)
+growth_label = tk.Label(root, text=f"Crop Growth Percentage: {growth_percentage:.2f}%")
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
@@ -522,9 +521,10 @@ video_button.pack(side=tk.LEFT, padx=5)
 # Create a button to trigger the NDVI stream
 ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
 ndvi_button.pack(side=tk.LEFT, padx=5)
-
+pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze)  # Pest detection
+pest_button.pack(side=tk.LEFT, padx=5)
 # Create a button to trigger the analysis
-analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze)  # Pest detection
+analyze_button = tk.Button(root, text="Analyze Crops", command=analyze_crop_growth)
 
 analyze_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
 
@@ -535,32 +535,6 @@ report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack(side=tk.LEFT, padx=5)
-
-battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
-battery_label.pack()
-# Create a label for the analysis
-analysis_label = tk.Label(root, text="Analysis:")
-analysis_label.pack()  # Span the label across all columns with padding
-
-# Labels for displaying crop growth information
-average_height_label = tk.Label(root, text="Average Height: ")
-average_height_label.pack()
-
-current_size_label = tk.Label(root, text="Current Size: ")
-current_size_label.pack()
-
-daily_growth_label = tk.Label(root, text="Daily Growth: ")
-daily_growth_label.pack()
-
-weekly_growth_label = tk.Label(root, text="Weekly Growth: ")
-weekly_growth_label.pack()
-
-expected_size_label = tk.Label(root, text="Expected Size: ")
-expected_size_label.pack()
-
-# Create a label for displaying the video feed
-video_label = tk.Label(root)
-video_label.pack()
 
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
