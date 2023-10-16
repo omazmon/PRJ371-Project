@@ -1,4 +1,5 @@
 import atexit
+import datetime
 import os
 import threading
 import time
@@ -7,17 +8,14 @@ from tkinter import messagebox, filedialog
 import cv2
 import numpy as np
 import pyodbc
+import requests
 from PIL import Image, ImageTk
 from djitellopy import Tello
 from future.moves.tkinter import messagebox
 from keras.models import load_model
 from matplotlib import contour
 
-# Load the background image
-# background_image = Image.open("background-image.jpg")
-# background_photo = ImageTk.PhotoImage(background_image)
-# background_label = tk.Label(root, image=background_photo)
-# background_label.place(relwidth=1, relheight=1)
+WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"
 # Load the pre-trained pest detection model
 pest_detection_model = load_model('imagemodels/PestClassifier.h5')
 captured_images_directory = "captured_images"
@@ -38,11 +36,16 @@ total_growth = 0
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
+#
 # # Load YOLO
 # net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
+# classes = []
+# with open("coco.names", "r") as f:
+#     classes = f.read().strip().split("\n")
+#
 # layer_names = net.getLayerNames()
 # output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
-#
+
 # Function to identify pests using the loaded model
 def identify_pests(frame):
     # Resize the frame to match the input size of the model
@@ -137,6 +140,50 @@ def update_video_thread():
         update_video()
 
 
+def get_historical_weather_data(city, start_date, end_date, api_key):
+    endpoint = f"https://api.openweathermap.org/data/2.5/onecall/timemachine"
+    params = {
+        "location": city,
+        "start": start_date,  # UNIX timestamp for the start date
+        "end": end_date,  # UNIX timestamp for the end date
+        "units": "metric",  # Use metric units
+        "appid": WEATHER_API_KEY  # Your OpenWeatherMap API key
+    }
+
+    response = requests.get(endpoint, params=params)
+    data = response.json()
+    return data
+
+
+def predict_optimal_planting_dates(city, start_date, end_date, api_key):
+    historical_weather_data = get_historical_weather_data(city, start_date, end_date, api_key)
+
+    optimal_planting_dates = []  # List to store predicted optimal planting dates
+
+    # Example: Assume optimal planting conditions if temperature is between 15°C and 25°C and there is sufficient rainfall
+    for day_data in historical_weather_data["hourly"]:
+        temperature = day_data["temp"]
+        rainfall = day_data.get("rain", 0)  # Rainfall data may be available in the API response
+
+        if 15 <= temperature <= 25 and rainfall >= 5:  # Example conditions (customize based on agricultural knowledge)
+            optimal_planting_dates.append(day_data["dt"])
+
+    return optimal_planting_dates
+
+
+# Function to handle planting prediction button click event
+def on_predict_planting_dates():
+    city = city_entry.get()
+    start_date = start_date_entry.get()
+    end_date = end_date_entry.get()
+
+    # Call the prediction function
+    optimal_planting_dates = predict_optimal_planting_dates(city, start_date, end_date, WEATHER_API_KEY)
+
+    # Display the predicted planting dates
+    result_label.config(text=f"Optimal Planting Dates: {optimal_planting_dates}")
+
+
 # Function to receive and process NDVI map image
 def receive_ndvi_map():
     while True:
@@ -158,10 +205,10 @@ def receive_ndvi_map():
         output_image[:, :, :3] = ndvi_map
         output_image[:, :, 3] = 255  # Set alpha channel to 255 for non-transparent pixels
 
-        # Save the output image with transparency (optional)
+        # Save the output image with transparency
         cv2.imwrite('output_transparent_ndvi_map.png', output_image)
 
-        # Display the output image (optional)
+        # Display the output image
         cv2.imshow('Transparent NDVI Map', output_image)
 
         # Break the loop and close windows if 'f' key is pressed
@@ -235,12 +282,32 @@ FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                            font=("Times New Roman", 14, "bold italic"))
+
 copyright_label.pack()
+
+# Load the background image
+background_image = Image.open("background-image.jpg")
+background_photo = ImageTk.PhotoImage(background_image)
+background_label = tk.Label(root, image=background_photo)
+background_label.place(relwidth=1, relheight=1)
+
+
+def update_date_time():
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date_time_label.config(text=f"{current_time}")
+    root.after(1000, update_date_time)
+
+
+# Create a label to display the current date and time
+date_time_label = tk.Label(root, text="", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
+date_time_label.pack()
+
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
-battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
+battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR,
+                         fg=LABEL_COLOR)
 battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
@@ -328,14 +395,19 @@ def get_soil_type(color):
 
 
 def calculate_and_visualize_ndvi(frame):
-    red_band = frame[:, :, 1]
-    nir_band = frame[:, :, 2]
+    # Extract red and near-infrared bands from the frame
+    red_band = frame[:, :, 0].astype(float)
+    nir_band = frame[:, :, 1].astype(float)
 
     # Calculate NDVI
     ndvi_map = (nir_band - red_band) / (nir_band + red_band)
-    ndvi_map = np.nan_to_num(ndvi_map)
+    ndvi_map = np.nan_to_num(ndvi_map)  # Handle division by zero
+
+    # Scale NDVI values to the range [0, 255] for visualization
+    ndvi_visualized = cv2.normalize(ndvi_map, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+
     # Apply a colormap for visualization (Jet colormap in this case)
-    ndvi_visualized = cv2.applyColorMap(np.uint8(255 * ndvi_map), cv2.COLORMAP_JET)
+    ndvi_visualized = cv2.applyColorMap(ndvi_visualized, cv2.COLORMAP_JET)
 
     # Convert to RGB format for PIL and Tkinter compatibility
     ndvi_visualized_rgb = cv2.cvtColor(ndvi_visualized, cv2.COLOR_BGR2RGB)
@@ -567,19 +639,43 @@ def on_button_click():
 
 
 # Create a button to trigger the video stream
-video_button = tk.Button(root, text="View stream", command=update_video, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Object Detection
+video_button = tk.Button(root, text="View stream 4 object detection", command=update_video, font=FONT_STYLE,
+                         bg=BG_COLOR,
+                         fg=LABEL_COLOR)  # Object Detection
 video_button.pack(side=tk.LEFT, padx=5)
 
-# Create a button to trigger the NDVI stream
-ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Crophealth analysis(NDVI)
+# Create a button to trigger the NDVI normalized difference vegetation index stream
+ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream, font=FONT_STYLE, bg=BG_COLOR,
+                        fg=LABEL_COLOR)  # Crophealth analysis(NDVI)
 ndvi_button.pack(side=tk.LEFT, padx=5)
 
-pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Pest detection
+pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze, font=FONT_STYLE, bg=BG_COLOR,
+                        fg=LABEL_COLOR)  # Pest detection
 pest_button.pack(side=tk.LEFT, padx=5)
 
-analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
+analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops, font=FONT_STYLE, bg=BG_COLOR,
+                           fg=LABEL_COLOR)
 analyze_button.pack(side=tk.LEFT, padx=5)
 
+# Create Tkinter widgets for city, start date, and end date input
+city_label = tk.Label(root, text="City:")
+city_label.pack()
+city_entry = tk.Entry(root)
+city_entry.pack()
+
+start_date_label = tk.Label(root, text="Start Date (YYYY-MM-DD):")
+start_date_label.pack()
+start_date_entry = tk.Entry(root)
+start_date_entry.pack()
+
+end_date_label = tk.Label(root, text="End Date (YYYY-MM-DD):")
+end_date_label.pack()
+end_date_entry = tk.Entry(root)
+end_date_entry.pack()
+
+# Create a label to display the prediction result
+result_label = tk.Label(root, text="")
+result_label.pack()
 # Create a button to trigger the analysis
 growth_button = tk.Button(root, text="Crop Growth", command=on_button_click)
 growth_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
@@ -587,7 +683,9 @@ growth_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
 report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
-
+# Create a button to trigger the prediction
+predict_button = tk.Button(root, text="Predict Planting Dates", command=on_predict_planting_dates)
+predict_button.pack(side=tk.LEFT, padx=5)
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack(side=tk.BOTTOM, padx=5)
@@ -600,9 +698,9 @@ drone_thread = threading.Thread(target=drone_control_thread)
 battery_thread = threading.Thread(target=check_battery_periodically)
 atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
+update_date_time()
 root.mainloop()
 
-# Start both threads after tkinter window is closed
 video_thread.start()
 drone_thread.start()
 battery_thread.start()
