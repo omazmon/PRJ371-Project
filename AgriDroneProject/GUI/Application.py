@@ -1,34 +1,28 @@
-import time
-from datetime import datetime
 import subprocess
+import time
 import tkinter as tk
+from datetime import datetime
 from tkinter import ttk, messagebox
 import pyodbc
 import requests
-from PIL import Image, ImageTk
 
+
+# Create a Tkinter window
+root = tk.Tk()
+root.title("Agri~Drone")
 BG_COLOR = "#C0C0C0"  # Light gray background
 LABEL_COLOR = "#333333"  # Dark gray label text
 BUTTON_COLOR = "#4CAF50"  # Green button color
 TEXT_COLOR = "#000000"  # Black text color
 FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
-# Create a Tkinter window
-root = tk.Tk()
-root.title("Agri~Drone")
 warning_message = """
 Please Note:
 - Enter accurate data for the most optimal assessment.
 - Use the application responsibly and follow ethical guidelines.
 """
 # Set the window size to fullscreen
-root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
+root.geometry("450x400")
 root.config(bg=BG_COLOR)
-
-# Load the background image
-background_image = Image.open("background-image.jpg")
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
 
 # Create a connection to the database
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
@@ -148,55 +142,48 @@ def close_application():
     root.destroy()
 
 
-# Create a list of provinces in South Africa
-provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal", "Limpopo",
-             "Mpumalanga", "North West", "Northern Cape", "Western Cape"]
-
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
-welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"))
+welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"), background=BG_COLOR, foreground=TEXT_COLOR)
 welcome_label.pack()
 
 # Create a label to display the current date and time
-date_time_label = ttk.Label(root, text="")
+date_time_label = ttk.Label(root, text="", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
 date_time_label.pack()
 
-farm_name_label = ttk.Label(root, text="Farm Name:")
+farm_name_label = ttk.Label(root, text="Farm Name:", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
 farm_name_label.pack()
 farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
 farm_name_combobox.set("Select Farm Name")
-farm_name_combobox.pack()
-# Create a location dropdown (combobox)
-location_label = ttk.Label(root, text="Province")
-location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
-location_combobox.set("Please select province")
-location_label.pack()
-location_combobox.pack()
+farm_name_combobox.pack(padx=10)
 
-city_label = ttk.Label(root, text="City")
+city_label = ttk.Label(root, text="City", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
 city_combobox = ttk.Combobox(root, values=cities, state="readonly")
 city_combobox.set("Please select city")
 city_label.pack()
-city_combobox.pack()
+city_combobox.pack(padx=10)
 # Create a crop type dropdown (combobox)
-crop_label = ttk.Label(root, text="Crop Type")
+crop_label = ttk.Label(root, text="Crop Type", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
 crop_combobox = ttk.Combobox(root, values=top_crops, state="readonly")
 crop_combobox.set("Select Crop Type")
 crop_label.pack()
-crop_combobox.pack()
+crop_combobox.pack(padx=10)
 
 # Create a button to fetch and display weather forecast
-weather_button = ttk.Button(root, text="Check Weather Forecast", command=display_weather_forecast)
-weather_button.pack()
+weather_button = tk.Button(root, text="Check Weather Forecast", command=display_weather_forecast, background="#A9A9A9", font=FONT_STYLE)
+weather_button.pack(pady=5, padx=20)
 
-crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application, state="disabled")
-crop_assessment_button.pack()
+crop_assessment_button = tk.Button(root, text="Start Drone", command=close_application, state="disabled", background=BUTTON_COLOR, font=FONT_STYLE)
+crop_assessment_button.pack(pady=5, padx=20)
 
-logout_button = tk.Button(root, text="LogOut", command=root.destroy)
-logout_button.pack()
-copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                            font=("Times New Roman", 14, "bold italic"))
+logout_button = tk.Button(root, text="LogOut", command=root.destroy,background="#FF0000", font=FONT_STYLE)
+logout_button.pack(pady=5, padx=20)
+
+copyright_label = ttk.Label(root, text="Copyright Reserved @ Agri~Drone 2023",
+                            font=("Times New Roman", 14, "bold italic"), background=BG_COLOR, foreground=TEXT_COLOR)
 copyright_label.pack()
+
+
 # Start the GUI main loop
 update_date_time()
 show_warning()

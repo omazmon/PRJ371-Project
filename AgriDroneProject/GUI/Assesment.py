@@ -13,7 +13,11 @@ from future.moves.tkinter import messagebox
 from keras.models import load_model
 from matplotlib import contour
 
-#
+# Load the background image
+# background_image = Image.open("background-image.jpg")
+# background_photo = ImageTk.PhotoImage(background_image)
+# background_label = tk.Label(root, image=background_photo)
+# background_label.place(relwidth=1, relheight=1)
 # Load the pre-trained pest detection model
 pest_detection_model = load_model('imagemodels/PestClassifier.h5')
 captured_images_directory = "captured_images"
@@ -221,6 +225,13 @@ root = tk.Tk()
 root.bind("<KeyPress>", on_key_press)
 root.bind("<KeyRelease>", on_key_release)
 root.title("Agri~Drone")
+
+BG_COLOR = "#C0C0C0"  # Light gray background
+LABEL_COLOR = "#333333"  # Dark gray label text
+BUTTON_COLOR = "#4CAF50"  # Green button color
+TEXT_COLOR = "#000000"  # Black text color
+FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
+
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                            font=("Times New Roman", 14, "bold italic"))
@@ -229,7 +240,7 @@ takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
-battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
+battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
 battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
@@ -556,17 +567,17 @@ def on_button_click():
 
 
 # Create a button to trigger the video stream
-video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
+video_button = tk.Button(root, text="View stream", command=update_video, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Object Detection
 video_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button to trigger the NDVI stream
-ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
+ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Crophealth analysis(NDVI)
 ndvi_button.pack(side=tk.LEFT, padx=5)
 
-pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze)  # Pest detection
+pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)  # Pest detection
 pest_button.pack(side=tk.LEFT, padx=5)
 
-analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops)
+analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
 analyze_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button to trigger the analysis
