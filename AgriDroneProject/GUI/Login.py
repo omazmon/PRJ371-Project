@@ -8,13 +8,16 @@ import bcrypt
 root = tk.Tk()
 root.title("Agri~Drone")
 
-# Set a consistent color scheme
-BG_COLOR = "#C0C0C0"
-LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#4CAF50"
+# Set a consistent color scheme for the application
+BG_COLOR = "#C0C0C0"  # Light gray background
+LABEL_COLOR = "#333333"  # Dark gray label text
+BUTTON_COLOR = "#4CAF50"  # Green button color
+TEXT_COLOR = "#000000"  # Black text color
+FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
 
 # Set the window size to a fixed size for better appearance
 root.geometry("400x360")
+root.config(bg=BG_COLOR)  # Set the background color of the window
 
 
 # Function to open the Application.py
@@ -48,29 +51,35 @@ def login():
     if user_role:
         messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
         open_application()
-        time.sleep(5)
+        time.sleep(3)
         root.destroy()
     else:
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
 
-label_Welcome = tk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 20, "bold italic"))
+# Labels and Entries for username and password
+label_Welcome = tk.Label(root, text="Welcome to AgriDrone", font=FONT_STYLE, bg=BG_COLOR, fg=TEXT_COLOR)
 label_Welcome.pack()
-label_Login = tk.Label(root, text="Please Login!", font=("Times New Roman", 20, "bold italic"))
+label_Login = tk.Label(root, text="Please Login!", font=FONT_STYLE, bg=BG_COLOR, fg=TEXT_COLOR)
 label_Login.pack(pady=10)
-label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
+label_username = tk.Label(root, text="Username:", font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
 label_username.pack(pady=10)
-entry_username = tk.Entry(root)
+entry_username = tk.Entry(root, font=FONT_STYLE)
 entry_username.pack(pady=10, padx=20)
 
-label_password = tk.Label(root, text="Password:", bg=BG_COLOR, fg=LABEL_COLOR)
+label_password = tk.Label(root, text="Password:", font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
 label_password.pack(pady=10)
-entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
+entry_password = tk.Entry(root, show="*", font=FONT_STYLE)  # Mask the password with asterisks
 entry_password.pack(pady=10, padx=20)
 
-login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
+# Login button with specified color and font style
+login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white", font=FONT_STYLE)
 login_button.pack(pady=20)
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=("Times New Roman", 14, "bold italic"))
+
+# Copyright label
+copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023", font=FONT_STYLE, bg=BG_COLOR,
+                           fg=TEXT_COLOR)
 copyright_label.pack()
+
+# Start the tkinter main loop
 root.mainloop()

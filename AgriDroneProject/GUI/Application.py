@@ -6,42 +6,12 @@ from tkinter import ttk, messagebox
 import pyodbc
 import requests
 from PIL import Image, ImageTk
-import random
-from nltk.chat.util import Chat, reflections
 
-# Define patterns and responses for the chatbot
-patterns = [
-    (r'(.*)agricultural drone(.*)',
-     [
-         "Agricultural drones are used in farming to monitor crop health, optimize irrigation, and assess crop yield. They use various sensors and cameras to collect data."]),
-    (r'(.*)work(.*)drone(.*)',
-     [
-         "Agricultural drones work by flying over farmland and capturing data using sensors and cameras. This data is then used by farmers to make informed decisions about their crops."]),
-    (r'(.*)benefits(.*)agricultural drone(.*)',
-     [
-         "The benefits of agricultural drones include increased efficiency, better crop management, reduced costs, and improved yields due to data-driven decision-making."]),
-    (r'(.*)sensors(.*)agricultural drone(.*)',
-     [
-         "Agricultural drones are equipped with various sensors such as multispectral cameras, thermal cameras, and LiDAR sensors. These sensors help in capturing different types of data related to crops."]),
-    (r'(.*)future(.*)agricultural drone(.*)',
-     [
-         "The future of agricultural drones looks promising, with advancements in AI and machine learning. Drones will continue to play a vital role in precision agriculture and sustainable farming practices."]),
-    (r'(.*)thank you(.*)',
-     ["You're welcome! If you have more questions, feel free to ask."]),
-]
-
-# Create a chatbot using the patterns and reflections
-chatbot = Chat(patterns, reflections)
-
-
-# Function to start the chatbot when the checkbox is checked
-def start_chat():
-    if checkbox_var.get() == 1:
-        get_response()
-    else:
-        messagebox.showinfo("Error", "Please check the checkbox to start the chatbot.")
-
-
+BG_COLOR = "#C0C0C0"  # Light gray background
+LABEL_COLOR = "#333333"  # Dark gray label text
+BUTTON_COLOR = "#4CAF50"  # Green button color
+TEXT_COLOR = "#000000"  # Black text color
+FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Agri~Drone")
@@ -52,7 +22,8 @@ Please Note:
 """
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-BUTTON_COLOR = "#4CAF50"
+root.config(bg=BG_COLOR)
+
 # Load the background image
 background_image = Image.open("background-image.jpg")
 background_photo = ImageTk.PhotoImage(background_image)
@@ -173,18 +144,8 @@ def update_date_time():
 
 def close_application():
     subprocess.Popen(["python", "Assesment.py"])
-    time.sleep(7)
+    time.sleep(5)
     root.destroy()
-
-
-# Function to handle user input and get chatbot response
-def get_response():
-    if checkbox_var.get() == 1:
-        user_input = "hey"
-        response = chatbot.respond(user_input)
-        messagebox.showinfo("Chatbot Response", random.choice(response))
-    else:
-        messagebox.showinfo("Error", "Please check the checkbox to start the chatbot.")
 
 
 # Create a list of provinces in South Africa
@@ -231,11 +192,8 @@ weather_button.pack()
 crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application, state="disabled")
 crop_assessment_button.pack()
 
-checkbox_var = tk.IntVar()
-checkbox = tk.Checkbutton(root, text="Start Chatbot", variable=checkbox_var)
-checkbox.pack()
-
-
+logout_button = tk.Button(root, text="LogOut", command=root.destroy)
+logout_button.pack()
 copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))
 copyright_label.pack()

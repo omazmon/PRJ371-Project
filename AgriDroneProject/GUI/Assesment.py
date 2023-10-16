@@ -3,7 +3,7 @@ import os
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 import cv2
 import numpy as np
 import pyodbc
@@ -315,6 +315,7 @@ def get_soil_type(color):
     # Return the corresponding soil type
     return soil_colors.get(closest_color, None)
 
+
 def calculate_and_visualize_ndvi(frame):
     red_band = frame[:, :, 1]
     nir_band = frame[:, :, 2]
@@ -401,48 +402,50 @@ def capture_and_analyze():
 
 atexit.register(conn.close)
 
+top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
+crop_colors = {
+    "Maize": (0, 255, 0),  # Green color for Maize
+    "Sugarcane": (0, 0, 255),  # Red color for Sugarcane
+    "Wheat": (255, 0, 0),  # Blue color for Wheat
+    "Sunflower": (0, 255, 255),  # Yellow color for Sunflower
+    "Citrus": (255, 255, 0)  # Cyan color for Citrus
+}
 
-# top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
-# crop_colors = {
-#     "Maize": (0, 255, 0),  # Green color for Maize
-#     "Sugarcane": (0, 0, 255),  # Red color for Sugarcane
-#     "Wheat": (255, 0, 0),  # Blue color for Wheat
-#     "Sunflower": (0, 255, 255),  # Yellow color for Sunflower
-#     "Citrus": (255, 255, 0)  # Cyan color for Citrus
-# }
-# def process_frame(frame):
-#     # Convert the frame to HSV for color-based segmentation
-#     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-#
-#     # Define the lower and upper bounds for each crop color (you need to adjust these values)
-#     lower_boundaries = {
-#         "Maize": np.array([35, 100, 100]),
-#         "Sugarcane": np.array([0, 100, 100]),
-#         "Wheat": np.array([20, 100, 100]),
-#         "Sunflower": np.array([15, 100, 100]),
-#         "Citrus": np.array([25, 100, 100])
-#     }
-#     upper_boundaries = {
-#         "Maize": np.array([90, 255, 255]),
-#         "Sugarcane": np.array([10, 255, 255]),
-#         "Wheat": np.array([40, 255, 255]),
-#         "Sunflower": np.array([30, 255, 255]),
-#         "Citrus": np.array([35, 255, 255])
-#     }
-#
-#     # Initialize an empty list to store detected crops
-#     detected_crops = []
-#
-#     # Detect crops and draw rectangles around them
-#     for crop, (lower, upper) in zip(top_crops, zip(lower_boundaries.values(), upper_boundaries.values())):
-#         mask = cv2.inRange(hsv, lower, upper)
-#         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#         for contour in contours:
-#             x, y, w, h = cv2.boundingRect(contour)
-#             cv2.rectangle(frame, (x, y), (x + w, y + h), crop_colors[crop], 2)
-#             detected_crops.append(crop)
-#
-#     return frame, detected_crops
+
+def process_crops(frame):
+    # Convert the frame to HSV for color-based segmentation
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # Define the lower and upper bounds for each crop color (you need to adjust these values)
+    lower_boundaries = {
+        "Maize": np.array([35, 100, 100]),
+        "Sugarcane": np.array([0, 100, 100]),
+        "Wheat": np.array([20, 100, 100]),
+        "Sunflower": np.array([15, 100, 100]),
+        "Citrus": np.array([25, 100, 100])
+    }
+    upper_boundaries = {
+        "Maize": np.array([90, 255, 255]),
+        "Sugarcane": np.array([10, 255, 255]),
+        "Wheat": np.array([40, 255, 255]),
+        "Sunflower": np.array([30, 255, 255]),
+        "Citrus": np.array([35, 255, 255])
+    }
+
+    # Initialize an empty list to store detected crops
+    detected_crops = []
+
+    # Detect crops and draw rectangles around them
+    for crop, (lower, upper) in zip(top_crops, zip(lower_boundaries.values(), upper_boundaries.values())):
+        mask = cv2.inRange(hsv, lower, upper)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), crop_colors[crop], 2)
+            detected_crops.append(crop)
+
+    return frame, detected_crops
+
 
 def process_frame(frame):
     # Convert the frame to grayscale  detection
@@ -498,16 +501,17 @@ def check_battery():
         battery_label.config(text="Low Battery Warning! Returning to Base.")
         # Automatic return to base
         drone.land()
-        time.sleep(5)
+        time.sleep(2)
 
 
-# Check battery level every 60 seconds
+# Check battery level every
 def check_battery_periodically():
     while True:
         check_battery()
-        time.sleep(5)
+        time.sleep(2)
 
 
+# Function to analyze crop growth
 def analyze_crop_growth(previous_image_path, current_image_path):
     # Load previous and current images
     previous_image = cv2.imread(previous_image_path)
@@ -519,16 +523,15 @@ def analyze_crop_growth(previous_image_path, current_image_path):
     changed_pixel_count = np.count_nonzero(diff_image)
 
     # Calculate growth percentage based on changed pixel count
-    total_pixels = 2 * 1
+    total_pixels = 2 * 1  # Assuming a fixed area for demonstration
     growth_percentage = (changed_pixel_count / total_pixels) * 100
 
     return growth_percentage
 
 
+# Function to calculate crop area
 def calculate_crop_area(image):
     # Implement logic to calculate crop area based on image processing
-
-    # Example: Find contours and calculate area
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
     contours, _ = cv2.findContours(threshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -540,11 +543,17 @@ def calculate_crop_area(image):
     return total_area
 
 
-previous_image = cv2.imread("previous_crop_image.jpg")
-current_image = cv2.imread("current_crop_image.jpg")
+# Function to handle button click event
+def on_button_click():
+    previous_image_path = filedialog.askopenfilename(title="Select Previous Image")
+    current_image_path = filedialog.askopenfilename(title="Select Current Image")
 
-growth_percentage = analyze_crop_growth(previous_image, current_image)
-growth_label = tk.Label(root, text=f"Crop Growth Percentage: {growth_percentage:.2f}%")
+    # Call the analyze_crop_growth function
+    growth_percentage = analyze_crop_growth(previous_image_path, current_image_path)
+
+    # Display the output
+    output_label.config(text=f"Crop Growth Percentage: {growth_percentage:.2f}%")
+
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
@@ -557,9 +566,12 @@ ndvi_button.pack(side=tk.LEFT, padx=5)
 pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze)  # Pest detection
 pest_button.pack(side=tk.LEFT, padx=5)
 
+analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops)
+analyze_button.pack(side=tk.LEFT, padx=5)
+
 # Create a button to trigger the analysis
-analyze_button = tk.Button(root, text="Analyze Crops", command=analyze_crop_growth)
-analyze_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
+growth_button = tk.Button(root, text="Crop Growth", command=on_button_click)
+growth_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
@@ -567,8 +579,10 @@ report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 
 
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack(side=tk.LEFT, padx=5)
+logout_button.pack(side=tk.BOTTOM, padx=5)
 
+output_label = tk.Label(root, text="")
+output_label.pack()
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
