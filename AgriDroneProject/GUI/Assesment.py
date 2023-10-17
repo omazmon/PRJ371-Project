@@ -36,15 +36,6 @@ total_growth = 0
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
-#
-# # Load YOLO
-# net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-# classes = []
-# with open("coco.names", "r") as f:
-#     classes = f.read().strip().split("\n")
-#
-# layer_names = net.getLayerNames()
-# output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
 # Function to identify pests using the loaded model
 def identify_pests(frame):
@@ -76,58 +67,6 @@ def create_report(crop_health):
         # Handle the error, e.g., show an error message in Tkinter messagebox
         tk.messagebox.showerror("Error", f"Error in create_report: {e}")
 
-
-# # Function for object detection
-# def identify_objects_yolo(frame):
-#     height, width, channels = frame.shape
-#
-#     # Detecting objects
-#     blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
-#     net.setInput(blob)
-#     outs = net.forward(output_layers)
-#
-#     # Information to show on the screen
-#     class_ids = []
-#     confidences = []
-#     boxes = []
-#
-#     # Extract information from outs
-#     for out in outs:
-#         for detection in out:
-#             scores = detection[5:]
-#             class_id = np.argmax(scores)
-#             confidence = scores[class_id]
-#
-#             if confidence > 0.5:
-#                 # Object detected
-#                 center_x = int(detection[0] * width)
-#                 center_y = int(detection[1] * height)
-#                 w = int(detection[2] * width)
-#                 h = int(detection[3] * height)
-#
-#                 # Rectangle coordinates
-#                 x = int(center_x - w / 2)
-#                 y = int(center_y - h / 2)
-#
-#                 boxes.append([x, y, w, h])
-#                 confidences.append(float(confidence))
-#                 class_ids.append(class_id)
-#
-#     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
-#
-#     # Draw rectangles and labels on the objects detected
-#     for i in range(len(boxes)):
-#         if i in indexes:
-#             x, y, w, h = boxes[i]
-#             label = str(class_ids[i])
-#             confidence = confidences[i]
-#             color = (0, 255, 0)  # Green color for pests and rodents
-#
-#             # Draw rectangle and label
-#             cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-#             cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 1, color, 2)
-#
-#     return frame
 # Function to control the drone
 def drone_control_thread():
     while True:
@@ -149,7 +88,6 @@ def get_historical_weather_data(city, start_date, end_date, api_key):
         "units": "metric",  # Use metric units
         "appid": WEATHER_API_KEY  # Your OpenWeatherMap API key
     }
-
     response = requests.get(endpoint, params=params)
     data = response.json()
     return data
@@ -382,7 +320,6 @@ def get_soil_type(color):
         (0, 140, 255): 'finer texture, darker colored soil',
         (128, 0, 128): 'finer texture, lighter colored soil'
     }
-
     # Function to calculate the Euclidean distance between two colors
     def color_distance(c1, c2):
         return np.sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2)
