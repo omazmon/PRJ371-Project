@@ -1,23 +1,17 @@
 import atexit
-import datetime
 import os
 import threading
 import time
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox
 import cv2
 import numpy as np
 import pyodbc
-import requests
 from PIL import Image, ImageTk
 from djitellopy import Tello
 from future.moves.tkinter import messagebox
-from keras.models import load_model
-from matplotlib import contour
 
-WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"
-# Load the pre-trained pest detection model
-pest_detection_model = load_model('imagemodels/PestClassifier.h5')
+# Load the pre-trained pest detection mode
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
 
@@ -27,32 +21,13 @@ cursor = conn.cursor()
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
+drone.turn_motor_on()
+drone.set_video_fps(fps="60")
+drone.set_video_resolution(resolution='720P')
 drone.streamon()
-
-total_days = 0
-total_growth = 0
 
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-
-
-# Function to identify pests using the loaded model
-def identify_pests(frame):
-    # Resize the frame to match the input size of the model
-    resized_frame = cv2.resize(frame, (224, 224))
-
-    # Preprocess the frame for the model prediction
-    preprocessed_frame = np.expand_dims(resized_frame, axis=0)
-    preprocessed_frame = preprocessed_frame / 255.0  # Normalize pixel values
-
-    # Perform prediction using the pest detection model
-    predictions = pest_detection_model.predict(preprocessed_frame)
-
-    # Assuming the model has binary output (1 for pest, 0 for non-pest)
-    pest_detected = predictions[0][0] > 0.5
-
-    return pest_detected
 
 
 def create_report(crop_health):
@@ -67,6 +42,7 @@ def create_report(crop_health):
         # Handle the error, e.g., show an error message in Tkinter messagebox
         tk.messagebox.showerror("Error", f"Error in create_report: {e}")
 
+
 # Function to control the drone
 def drone_control_thread():
     while True:
@@ -77,49 +53,6 @@ def drone_control_thread():
 def update_video_thread():
     while True:
         update_video()
-
-
-def get_historical_weather_data(city, start_date, end_date, api_key):
-    endpoint = f"https://api.openweathermap.org/data/2.5/onecall/timemachine"
-    params = {
-        "location": city,
-        "start": start_date,  # UNIX timestamp for the start date
-        "end": end_date,  # UNIX timestamp for the end date
-        "units": "metric",  # Use metric units
-        "appid": WEATHER_API_KEY  # Your OpenWeatherMap API key
-    }
-    response = requests.get(endpoint, params=params)
-    data = response.json()
-    return data
-
-
-def predict_optimal_planting_dates(city, start_date, end_date, api_key):
-    historical_weather_data = get_historical_weather_data(city, start_date, end_date, api_key)
-
-    optimal_planting_dates = []  # List to store predicted optimal planting dates
-
-    # Example: Assume optimal planting conditions if temperature is between 15°C and 25°C and there is sufficient rainfall
-    for day_data in historical_weather_data["hourly"]:
-        temperature = day_data["temp"]
-        rainfall = day_data.get("rain", 0)  # Rainfall data may be available in the API response
-
-        if 15 <= temperature <= 25 and rainfall >= 5:  # Example conditions (customize based on agricultural knowledge)
-            optimal_planting_dates.append(day_data["dt"])
-
-    return optimal_planting_dates
-
-
-# Function to handle planting prediction button click event
-def on_predict_planting_dates():
-    city = city_entry.get()
-    start_date = start_date_entry.get()
-    end_date = end_date_entry.get()
-
-    # Call the prediction function
-    optimal_planting_dates = predict_optimal_planting_dates(city, start_date, end_date, WEATHER_API_KEY)
-
-    # Display the predicted planting dates
-    result_label.config(text=f"Optimal Planting Dates: {optimal_planting_dates}")
 
 
 # Function to receive and process NDVI map image
@@ -166,8 +99,6 @@ def take_off():
 def on_key_press(event):
     key = event.char
 
-    print(drone.get_battery())
-
     if key == '8':
         drone.send_rc_control(0, 0, 50, 0)  # Move up when
     elif key == '2':
@@ -181,9 +112,9 @@ def on_key_press(event):
     elif key == '6':
         drone.send_rc_control(75, 0, 0, 0)
     elif key == '7':
-        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
+        drone.send_rc_control(0, 0, 0, -250)  #
     elif key == '9':
-        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
+        drone.send_rc_control(0, 0, 0, 250)  # Rotate clockwise when 'w' is pressed
     elif key == '0':
         take_off()
     elif key == '5':
@@ -219,29 +150,12 @@ FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
 
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=("Times New Roman", 14, "bold italic"))
-
+                           font=FONT_STYLE)
 copyright_label.pack()
-
-# Load the background image
-background_image = Image.open("background-image.jpg")
-background_photo = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(root, image=background_photo)
-background_label.place(relwidth=1, relheight=1)
-
-
-def update_date_time():
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    date_time_label.config(text=f"{current_time}")
-    root.after(1000, update_date_time)
-
-
-# Create a label to display the current date and time
-date_time_label = tk.Label(root, text="", font=FONT_STYLE, background=BG_COLOR, foreground=TEXT_COLOR)
-date_time_label.pack()
 
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
+
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
 battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR,
@@ -249,33 +163,18 @@ battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", fo
 battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
-analysis_label.pack(side=tk.RIGHT)  # Span the label across all columns with padding
+analysis_label.pack()  # Span the label across all columns with padding
+
 crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
 crop_health_label.pack()
-# Create a label for displaying the video feed
-video_label = tk.Label(root)
-video_label.pack()
 
 
 # Function to update video until connection is established
 def update_video():
-    frame = drone.get_frame_read().frame  # Get frame from the drone's camera
-    # Perform pest detection
-    pest_detected = identify_pests(frame)
+    frame = drone.get_frame_read().frame
+
     # Process the frame
     processed_frame = process_frame(frame)
-    if pest_detected:
-        # Draw a red rectangle around the pest
-        x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
-        # You can also add additional text or labels to the frame
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(frame, 'Pest Detected', (50, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    else:
-        tk.messagebox.showinfo("Pest Detection", "No pests detected in the current frame.")
-
-    # Convert the processed frame to a format compatible with Tkinter
     img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img)
     img = ImageTk.PhotoImage(image=img)
@@ -320,6 +219,7 @@ def get_soil_type(color):
         (0, 140, 255): 'finer texture, darker colored soil',
         (128, 0, 128): 'finer texture, lighter colored soil'
     }
+
     # Function to calculate the Euclidean distance between two colors
     def color_distance(c1, c2):
         return np.sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2)
@@ -563,17 +463,8 @@ def calculate_crop_area(image):
     return total_area
 
 
-# Function to handle button click event
-def on_button_click():
-    previous_image_path = filedialog.askopenfilename(title="Select Previous Image")
-    current_image_path = filedialog.askopenfilename(title="Select Current Image")
-
-    # Call the analyze_crop_growth function
-    growth_percentage = analyze_crop_growth(previous_image_path, current_image_path)
-
-    # Display the output
-    output_label.config(text=f"Crop Growth Percentage: {growth_percentage:.2f}%")
-
+buttons_frame = tk.Frame(root)
+buttons_frame.pack(side=tk.TOP, fill=tk.X)
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream 4 object detection", command=update_video, font=FONT_STYLE,
@@ -586,56 +477,36 @@ ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream, font=
                         fg=LABEL_COLOR)  # Crophealth analysis(NDVI)
 ndvi_button.pack(side=tk.LEFT, padx=5)
 
-pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze, font=FONT_STYLE, bg=BG_COLOR,
-                        fg=LABEL_COLOR)  # Pest detection
-pest_button.pack(side=tk.LEFT, padx=5)
-
-analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops, font=FONT_STYLE, bg=BG_COLOR,
+# Create a button to trigger the analysis
+analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture_and_analyze, font=FONT_STYLE,
+                           bg=BG_COLOR,
                            fg=LABEL_COLOR)
 analyze_button.pack(side=tk.LEFT, padx=5)
 
-# Create Tkinter widgets for city, start date, and end date input
-city_label = tk.Label(root, text="City:")
-city_label.pack()
-city_entry = tk.Entry(root)
-city_entry.pack()
-
-start_date_label = tk.Label(root, text="Start Date (YYYY-MM-DD):")
-start_date_label.pack()
-start_date_entry = tk.Entry(root)
-start_date_entry.pack()
-
-end_date_label = tk.Label(root, text="End Date (YYYY-MM-DD):")
-end_date_label.pack()
-end_date_entry = tk.Entry(root)
-end_date_entry.pack()
-
-# Create a label to display the prediction result
-result_label = tk.Label(root, text="")
-result_label.pack()
-# Create a button to trigger the analysis
-growth_button = tk.Button(root, text="Crop Growth", command=on_button_click)
-growth_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
-
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
-report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
-# Create a button to trigger the prediction
-predict_button = tk.Button(root, text="Predict Planting Dates", command=on_predict_planting_dates)
-predict_button.pack(side=tk.LEFT, padx=5)
+report_button.pack()  # Place the button at row 0, column 3 with padding
+# # Create a button to trigger the prediction
+# predict_button = tk.Button(root, text="Predict Planting Dates", command=on_predict_planting_dates)
+# predict_button.pack(side=tk.LEFT, padx=5)
 # Create a button for logout
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack(side=tk.BOTTOM, padx=5)
 
-output_label = tk.Label(root, text="")
-output_label.pack()
+battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
+battery_label.pack()
+
+# Create a label for displaying the video feed
+video_label = tk.Label(root)
+video_label.pack()
+
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 battery_thread = threading.Thread(target=check_battery_periodically)
 atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
-update_date_time()
+
 root.mainloop()
 
 video_thread.start()

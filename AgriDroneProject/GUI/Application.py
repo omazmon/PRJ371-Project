@@ -6,7 +6,6 @@ from tkinter import ttk, messagebox
 import pyodbc
 import requests
 
-
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Agri~Drone")
@@ -144,7 +143,8 @@ def close_application():
 
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
-welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"), background=BG_COLOR, foreground=TEXT_COLOR)
+welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 18, "bold"), background=BG_COLOR,
+                          foreground=TEXT_COLOR)
 welcome_label.pack()
 
 # Create a label to display the current date and time
@@ -170,19 +170,20 @@ crop_label.pack()
 crop_combobox.pack(padx=10)
 
 # Create a button to fetch and display weather forecast
-weather_button = tk.Button(root, text="Check Weather Forecast", command=display_weather_forecast, background="#A9A9A9", font=FONT_STYLE)
+weather_button = tk.Button(root, text="Check Weather Forecast", command=display_weather_forecast, background="#A9A9A9",
+                           font=FONT_STYLE)
 weather_button.pack(pady=5, padx=20)
 
-crop_assessment_button = tk.Button(root, text="Start Drone", command=close_application, state="disabled", background=BUTTON_COLOR, font=FONT_STYLE)
+crop_assessment_button = tk.Button(root, text="Start Drone", command=close_application, state="disabled",
+                                   background=BUTTON_COLOR, font=FONT_STYLE)
 crop_assessment_button.pack(pady=5, padx=20)
 
-logout_button = tk.Button(root, text="LogOut", command=root.destroy,background="#FF0000", font=FONT_STYLE)
+logout_button = tk.Button(root, text="LogOut", command=root.destroy, background="#FF0000", font=FONT_STYLE)
 logout_button.pack(pady=5, padx=20)
 
 copyright_label = ttk.Label(root, text="Copyright Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"), background=BG_COLOR, foreground=TEXT_COLOR)
 copyright_label.pack()
-
 
 # Start the GUI main loop
 update_date_time()
