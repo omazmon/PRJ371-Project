@@ -1,5 +1,4 @@
 import atexit
-<<<<<<< HEAD
 import datetime
 import os
 import threading
@@ -12,32 +11,13 @@ import pyodbc
 import requests
 from PIL import Image, ImageTk
 from djitellopy import Tello
-=======
-import threading
-import time
->>>>>>> parent of f3676e3 (update 7000)
 from future.moves.tkinter import messagebox
-import tkinter as tk
-import cv2
-from tkinter import messagebox
-import numpy as np
-from djitellopy import Tello
-from PIL import Image, ImageTk
-import pyodbc
-import os
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from keras.models import load_model
+from matplotlib import contour
 
-<<<<<<< HEAD
 WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"
-=======
-#
-<<<<<<< HEAD
->>>>>>> parent of b229660 (update gui)
 # Load the pre-trained pest detection model
 pest_detection_model = load_model('imagemodels/PestClassifier.h5')
-=======
->>>>>>> parent of f3676e3 (update 7000)
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
 
@@ -56,7 +36,6 @@ total_growth = 0
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
-<<<<<<< HEAD
 
 # Function to identify pests using the loaded model
 def identify_pests(frame):
@@ -76,13 +55,6 @@ def identify_pests(frame):
     return pest_detected
 
 
-=======
-# # Load YOLO
-# net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
-# layer_names = net.getLayerNames()
-# output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
-#
->>>>>>> parent of f3676e3 (update 7000)
 def create_report(crop_health):
     try:
         with open('crop_health_report.txt', 'a') as file:
@@ -238,6 +210,13 @@ root = tk.Tk()
 root.bind("<KeyPress>", on_key_press)
 root.bind("<KeyRelease>", on_key_release)
 root.title("Agri~Drone")
+
+BG_COLOR = "#C0C0C0"  # Light gray background
+LABEL_COLOR = "#333333"  # Dark gray label text
+BUTTON_COLOR = "#4CAF50"  # Green button color
+TEXT_COLOR = "#000000"  # Black text color
+FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
+
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                            font=("Times New Roman", 14, "bold italic"))
@@ -264,21 +243,13 @@ date_time_label.pack()
 takeoff_button = tk.Button(root, text="Take Off", command=take_off)
 takeoff_button.pack(pady=20)
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
-<<<<<<< HEAD
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
-<<<<<<< HEAD
 battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR,
                          fg=LABEL_COLOR)
-=======
-=======
-buttons_frame.pack(side=tk.TOP, fill=tk.X)  
->>>>>>> parent of f3676e3 (update 7000)
-battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
->>>>>>> parent of b229660 (update gui)
 battery_label.pack()
 # Create a label for the analysis
 analysis_label = tk.Label(root, text="Analysis:")
-analysis_label.pack()  # Span the label across all columns with padding
+analysis_label.pack(side=tk.RIGHT)  # Span the label across all columns with padding
 crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
 crop_health_label.pack()
 # Create a label for displaying the video feed
@@ -289,9 +260,20 @@ video_label.pack()
 # Function to update video until connection is established
 def update_video():
     frame = drone.get_frame_read().frame  # Get frame from the drone's camera
-
+    # Perform pest detection
+    pest_detected = identify_pests(frame)
     # Process the frame
     processed_frame = process_frame(frame)
+    if pest_detected:
+        # Draw a red rectangle around the pest
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+
+        # You can also add additional text or labels to the frame
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(frame, 'Pest Detected', (50, 50), font, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    else:
+        tk.messagebox.showinfo("Pest Detection", "No pests detected in the current frame.")
 
     # Convert the processed frame to a format compatible with Tkinter
     img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
@@ -330,7 +312,6 @@ def start_ndvi_stream():
     update_ndvi_video()
 
 
-# Function to identify soil type from color
 def get_soil_type(color):
     soil_colors = {
         (255, 0, 0): 'coarser texture, darker colored soil',
@@ -339,7 +320,6 @@ def get_soil_type(color):
         (0, 140, 255): 'finer texture, darker colored soil',
         (128, 0, 128): 'finer texture, lighter colored soil'
     }
-<<<<<<< HEAD
     # Function to calculate the Euclidean distance between two colors
     def color_distance(c1, c2):
         return np.sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2)
@@ -349,13 +329,6 @@ def get_soil_type(color):
 
     # Return the corresponding soil type
     return soil_colors.get(closest_color, None)
-=======
-    for key in soil_colors.keys():
-        if np.array_equal(color, np.array(key)):
-            return soil_colors[key]
-    return None
-
->>>>>>> parent of f3676e3 (update 7000)
 
 
 def calculate_and_visualize_ndvi(frame):
@@ -404,41 +377,38 @@ def capture_and_analyze():
         frame = drone.get_frame_read().frame
         ndvi_value = calculate_and_visualize_ndvi(frame)
         crop_health = analyze_crop_health(ndvi_value)
-        create_report(crop_health)
         pests_or_diseases_result = identify_pests_or_diseases(frame)
 
+        # Create a PDF report with crop health and pest detection results
         pdf_file_path = os.path.join(captured_images_directory, "report.pdf")
-        c = canvas.Canvas(pdf_file_path, pagesize=letter)
+        with open(pdf_file_path, 'w') as file:
+            file.write(f'Crop Health Report\n')
+            file.write(f'NDVI Value: {ndvi_value}\n')
+            file.write(f'Crop Health: {crop_health}\n')
+            file.write(f'Pests or Diseases: {pests_or_diseases_result}\n')
 
-        # Add report content
-        c.setFont("Helvetica", 12)
-        c.drawString(100, 700, "Crop Health Report")
-        c.drawString(100, 680, f"NDVI Value: {ndvi_value}")
-        c.drawString(100, 660, f"Crop Health: {crop_health}")
-        c.drawString(100, 640, f"Pests or Diseases: {pests_or_diseases_result}")
-
-        # Close the PDF
-        c.save()
-
-        # Save the original frame
+        # Save the original frame, NDVI image, and pests or diseases detection result
         original_image_path = os.path.join(captured_images_directory, "original_frame.jpg")
-        cv2.imwrite(original_image_path, frame)
-
-        # Save the NDVI image
         ndvi_image_path = os.path.join(captured_images_directory, "ndvi_map.jpg")
-        cv2.imwrite(ndvi_image_path, ndvi_value)
-
-        # Save the pests or diseases detection result
         pests_or_diseases_path = os.path.join(captured_images_directory, "pests_or_diseases_result.jpg")
+
+        cv2.imwrite(original_image_path, frame)
+        cv2.imwrite(ndvi_image_path, ndvi_value)
         cv2.imwrite(pests_or_diseases_path, pests_or_diseases_result * 255)
 
-        # Insert image paths into the 'images' table
-        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
-        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
-        cursor.execute("INSERT INTO Image (image_type, image_path) VALUES (?, ?)",
+        # Insert image paths into the 'images' table (assuming you have a table named 'images' in the database)
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)",
                        ("pests_or_diseases", pests_or_diseases_path))
         conn.commit()
 
+        # Display the PDF report content to the user (optional)
+        with open(pdf_file_path, 'r') as file:
+            report_content = file.read()
+            print(report_content)  # Print the report content to the console (you can display it in Tkinter labels)
+
+        # Display images (optional)
         cv2.imshow("Original Image", frame)
         cv2.imshow("NDVI", ndvi_value)
         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
@@ -606,7 +576,6 @@ def on_button_click():
 
 
 # Create a button to trigger the video stream
-<<<<<<< HEAD
 video_button = tk.Button(root, text="View stream 4 object detection", command=update_video, font=FONT_STYLE,
                          bg=BG_COLOR,
                          fg=LABEL_COLOR)  # Object Detection
@@ -623,19 +592,6 @@ pest_button.pack(side=tk.LEFT, padx=5)
 
 analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops, font=FONT_STYLE, bg=BG_COLOR,
                            fg=LABEL_COLOR)
-=======
-video_button = tk.Button(root, text="View stream", command=update_video)  # Object Detection
-video_button.pack(side=tk.LEFT, padx=5)
-
-# Create a button to trigger the NDVI stream
-ndvi_button = tk.Button(root, text="View NDVI", command=start_ndvi_stream)  # Crophealth analysis(NDVI)
-ndvi_button.pack(side=tk.LEFT, padx=5)
-pest_button = tk.Button(root, text="Pest Detection", command=capture_and_analyze)  # Pest detection
-pest_button.pack(side=tk.LEFT, padx=5)
-<<<<<<< HEAD
-
-analyze_button = tk.Button(root, text="Analyze Crops", command=process_crops)
->>>>>>> parent of b229660 (update gui)
 analyze_button.pack(side=tk.LEFT, padx=5)
 
 # Create Tkinter widgets for city, start date, and end date input
@@ -660,12 +616,6 @@ result_label.pack()
 # Create a button to trigger the analysis
 growth_button = tk.Button(root, text="Crop Growth", command=on_button_click)
 growth_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
-=======
-# Create a button to trigger the analysis
-analyze_button = tk.Button(root, text="Analyze Crops", command=analyze_crop_growth)
-
-analyze_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 2 with padding
->>>>>>> parent of f3676e3 (update 7000)
 
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback

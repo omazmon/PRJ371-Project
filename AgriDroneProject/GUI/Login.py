@@ -77,7 +77,7 @@ login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg=
 login_button.pack(pady=20)
 
 # Copyright label
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023", font=FONT_STYLE, bg=BG_COLOR,
+copyright_label = tk.Label(root, text="Copyright Reserved @ Agri~Drone 2023", font=FONT_STYLE, bg=BG_COLOR,
                            fg=TEXT_COLOR)
 copyright_label.pack()
 
