@@ -1,4 +1,3 @@
-import atexit
 import os
 import threading
 import time
@@ -25,7 +24,7 @@ drone.turn_motor_on()
 drone.set_video_fps(fps="60")
 drone.set_video_resolution(resolution='720P')
 drone.streamon()
-
+ndvi_mode = False
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
@@ -52,7 +51,11 @@ def drone_control_thread():
 # Function to update video until connection is established
 def update_video_thread():
     while True:
-        update_video()
+        if ndvi_mode:
+            start_ndvi_stream()
+        else:
+            update_video()
+        time.sleep(0.1)
 
 
 # Function to receive and process NDVI map image
@@ -171,6 +174,8 @@ crop_health_label.pack()
 
 # Function to update video until connection is established
 def update_video():
+    global ndvi_mode
+    ndvi_mode = False
     frame = drone.get_frame_read().frame
 
     # Process the frame
@@ -193,20 +198,24 @@ def identify_pests_or_diseases(image):
 
 
 def start_ndvi_stream():
+    global ndvi_mode
+    ndvi_mode = True
+
     # Function to update video with NDVI frames
     def update_ndvi_video():
-        frame = drone.get_frame_read().frame
-        processed_frame = process_frame(frame)
-        # processed_frame = identify_objects_yolo(processed_frame)
+        if ndvi_mode:
+            frame = drone.get_frame_read().frame
+            processed_frame = process_frame(frame)
 
-        # Calculate and visualize NDVI
-        ndvi_image = calculate_and_visualize_ndvi(processed_frame)
+            # Calculate and visualize NDVI
+            ndvi_image = calculate_and_visualize_ndvi(processed_frame)
 
-        # Update the label with the new NDVI image
-        video_label.img = ndvi_image
-        video_label.config(image=ndvi_image)
-        root.after(60, update_ndvi_video)
-
+            # Update the label with the new NDVI image
+            video_label.img = ndvi_image
+            video_label.config(image=ndvi_image)
+            root.after(60, update_ndvi_video)
+    ndvi_thread = threading.Thread(target=update_ndvi_video)
+    ndvi_thread.start()
     # Start updating the video with NDVI frames
     update_ndvi_video()
 
@@ -319,8 +328,6 @@ def capture_and_analyze():
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
 
-
-atexit.register(conn.close)
 
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 crop_colors = {
@@ -486,15 +493,9 @@ analyze_button.pack(side=tk.LEFT, padx=5)
 # Create a button for the report
 report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
 report_button.pack()  # Place the button at row 0, column 3 with padding
-# # Create a button to trigger the prediction
-# predict_button = tk.Button(root, text="Predict Planting Dates", command=on_predict_planting_dates)
-# predict_button.pack(side=tk.LEFT, padx=5)
-# Create a button for logout
+
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack(side=tk.BOTTOM, padx=5)
-
-battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%")
-battery_label.pack()
 
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
@@ -504,7 +505,6 @@ video_label.pack()
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 battery_thread = threading.Thread(target=check_battery_periodically)
-atexit.register(close_application)
 # Start the tkinter main loop (window will open here)
 
 root.mainloop()

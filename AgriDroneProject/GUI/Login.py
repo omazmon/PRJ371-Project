@@ -3,7 +3,11 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 import bcrypt
+import pyodbc
 
+conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
+conn = pyodbc.connect(conn_str)
+cursor = conn.cursor()
 # Create the main application window
 root = tk.Tk()
 root.title("Agri~Drone")
@@ -25,36 +29,28 @@ def open_application():
     subprocess.Popen(["python", "Application.py"])
 
 
-valid_credentials = {
-    "technician": {"username": "admin", "password": bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())},
-    "farmer": {"username": "farmer", "password": bcrypt.hashpw("@1234@".encode('utf-8'), bcrypt.gensalt())}
-}
-
-
-# Function to validate credentials
-def validate_credentials(username, password):
-    user_role = None
-    for role, credentials in valid_credentials.items():
-        if username == credentials["username"] and bcrypt.checkpw(password.encode('utf-8'), credentials["password"]):
-            user_role = role
-            break
-    return user_role
-
-
-# Function to handle login button click
 def login():
     username = entry_username.get()
     password = entry_password.get()
 
-    user_role = validate_credentials(username, password)
-
-    if user_role:
-        messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
-        open_application()
-        time.sleep(3)
-        root.destroy()
-    else:
-        messagebox.showerror("Error", "Invalid credentials. Please try again.")
+    try:
+        # Authenticate user against the database
+        cursor.execute('SELECT Password, Role FROM Users WHERE Username=?', (username,))
+        row = cursor.fetchone()
+        if row:
+            stored_password, role = row
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+                messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
+                open_application()
+                time.sleep(3)
+                root.destroy()
+            else:
+                messagebox.showerror("Error", "Invalid credentials. Please try again.")
+        else:
+            messagebox.showerror("Error", "User not found.")
+    except pyodbc.Error as e:
+        print(f"Database error: {e}")
+        messagebox.showerror("Error", "An error occurred while accessing the database.")
 
 
 # Labels and Entries for username and password
@@ -83,3 +79,4 @@ copyright_label.pack()
 
 # Start the tkinter main loop
 root.mainloop()
+conn.close()
