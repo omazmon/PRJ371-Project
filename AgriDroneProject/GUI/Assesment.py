@@ -13,6 +13,8 @@ from future.moves.tkinter import messagebox
 # Load the pre-trained pest detection mode
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
+# Define the codec and create a VideoWriter object
+fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change the codec as needed
 
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
@@ -20,9 +22,6 @@ cursor = conn.cursor()
 # Initialize the Tello drone
 drone = Tello()
 drone.connect()
-drone.turn_motor_on()
-drone.set_video_fps(fps="60")
-drone.set_video_resolution(resolution='720P')
 drone.streamon()
 ndvi_mode = False
 # Initialize the Haar cascade for face detection
@@ -156,8 +155,6 @@ copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                            font=FONT_STYLE)
 copyright_label.pack()
 
-takeoff_button = tk.Button(root, text="Take Off", command=take_off)
-takeoff_button.pack(pady=20)
 
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
@@ -165,7 +162,8 @@ battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", fo
                          fg=LABEL_COLOR)
 battery_label.pack()
 # Create a label for the analysis
-analysis_label = tk.Label(root, text="Analysis:")
+analysis_label = tk.Label(root, text="Analysis:", font=FONT_STYLE, bg=BG_COLOR,
+                          fg=LABEL_COLOR)
 analysis_label.pack()  # Span the label across all columns with padding
 
 crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
@@ -176,18 +174,21 @@ crop_health_label.pack()
 def update_video():
     global ndvi_mode
     ndvi_mode = False
-    frame = drone.get_frame_read().frame
-
-    # Process the frame
-    processed_frame = process_frame(frame)
-    img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-    img = Image.fromarray(img)
-    img = ImageTk.PhotoImage(image=img)
-
-    # Update the label with the new frame
-    video_label.img = img
-    video_label.config(image=img)
-    root.after(60, update_video)
+    while True:
+        frame = drone.get_frame_read().frame
+        out = cv2.VideoWriter('output_video.avi', fourcc, 20.0, (frame.shape[1], frame.shape[0]))
+        # Process the frame
+        processed_frame = process_frame(frame)
+        img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(img)
+        img = ImageTk.PhotoImage(image=img)
+        out.write(processed_frame)
+        # Update the label with the new frame
+        video_label.img = img
+        video_label.config(image=img)
+        root.after(3, update_video)
+        out.release()
+        cv2.destroyAllWindows()
 
 
 def identify_pests_or_diseases(image):
@@ -214,6 +215,7 @@ def start_ndvi_stream():
             video_label.img = ndvi_image
             video_label.config(image=ndvi_image)
             root.after(60, update_ndvi_video)
+
     ndvi_thread = threading.Thread(target=update_ndvi_video)
     ndvi_thread.start()
     # Start updating the video with NDVI frames
@@ -470,8 +472,10 @@ def calculate_crop_area(image):
     return total_area
 
 
-buttons_frame = tk.Frame(root)
-buttons_frame.pack(side=tk.TOP, fill=tk.X)
+# buttons_frame = tk.Frame(root)
+# buttons_frame.pack(side=tk.LEFT, fill=tk.X)# Create a panel to hold the buttons
+button_panel = tk.Frame(root, bg=BG_COLOR)
+button_panel.pack(side=tk.LEFT, padx=10, pady=10)
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream 4 object detection", command=update_video, font=FONT_STYLE,
@@ -491,8 +495,10 @@ analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture
 analyze_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button for the report
-report_button = tk.Button(root, text="Generate Report", command=create_report)  # User feedback
-report_button.pack()  # Place the button at row 0, column 3 with padding
+report_button = tk.Button(root, text="Generate Report", command=create_report, font=FONT_STYLE,
+                          bg=BG_COLOR,
+                          fg=LABEL_COLOR)  # User feedback
+report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
 
 logout_button = tk.Button(root, text="LogOut", command=close_application)
 logout_button.pack(side=tk.BOTTOM, padx=5)
@@ -512,4 +518,3 @@ root.mainloop()
 video_thread.start()
 drone_thread.start()
 battery_thread.start()
-drone.streamoff()
