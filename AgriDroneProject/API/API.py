@@ -1,12 +1,58 @@
-from flask import Flask, request, jsonify
 import requests
+from flask import Flask, render_template, request, jsonify
+import bcrypt
+import pyodbc
+import uuid
 
 app = Flask(__name__)
 
+# Database connection setup
+conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
+conn = pyodbc.connect(conn_str)
+cursor = conn.cursor()
+
+
+def generate_user_id():
+    # Generate a unique user ID using UUID
+    user_id = str(uuid.uuid4())
+    return user_id
+
+
+@app.route('/')
+def index():
+    return render_template('registration.html')
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    first_name = request.form['first_name']
+    last_name = request.form['last_name']
+    username = request.form['username']
+    password = request.form['password']
+    role = request.form['role']
+
+    # Generate user ID (you can use any method to generate a unique ID, for example, UUID)
+    user_id = generate_user_id()
+
+    try:
+        # Hash the password before storing it in the database
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        # Insert user data into the database
+        cursor.execute(
+            'INSERT INTO Users (UserID, FirstName, LastName, Username, Password, Role) VALUES (?, ?, ?, ?, ?, ?)',
+            (user_id, first_name, last_name, username, hashed_password, role))
+        conn.commit()
+
+        return jsonify({'success': True, 'message': 'Registration successful!'})
+    except pyodbc.Error as e:
+        print(f"Database error: {e}")
+        return jsonify({'success': False, 'message': 'An error occurred while registering the user.'})
+
+
 # External weather API endpoint (example: OpenWeatherMap API)
 WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/"
-WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"  
-
+WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"
 
 crops_data = {
     "wheat": {

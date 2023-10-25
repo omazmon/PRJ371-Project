@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import messagebox
 import bcrypt
 import pyodbc
+import tkinterhtml as tkhtml
+import webbrowser
 
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
@@ -71,6 +73,7 @@ entry_password.pack(pady=10, padx=20)
 # Login button with specified color and font style
 login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white", font=FONT_STYLE)
 login_button.pack(pady=20)
+
 
 # Copyright label
 copyright_label = tk.Label(root, text="Copyright Reserved @ Agri~Drone 2023", font=FONT_STYLE, bg=BG_COLOR,
