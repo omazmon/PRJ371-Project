@@ -9,12 +9,13 @@ import pyodbc
 from PIL import Image, ImageTk
 from djitellopy import Tello
 from future.moves.tkinter import messagebox
+import datetime
 
 # Load the pre-trained pest detection mode
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
 # Define the codec and create a VideoWriter object
-fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can change the codec as needed
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
@@ -23,15 +24,19 @@ cursor = conn.cursor()
 drone = Tello()
 drone.connect()
 drone.streamon()
+
 ndvi_mode = False
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-
 def create_report(crop_health):
     try:
-        with open('crop_health_report.txt', 'a') as file:
-            file.write(f'Crop Health: {crop_health}\n')
+        timestamp = datetime.datetime.now()
+        report = f'Report generated on {timestamp}:\nCrop Health: {crop_health}\n'
+
+        # Insert the report into the database
+        cursor.execute("INSERT INTO Crops (report_text) VALUES (?)", (report,))
+        conn.commit()
 
         # Update the Tkinter label with the crop health information
         crop_health_label.config(text=f"Crop Health: {crop_health}")
@@ -155,7 +160,6 @@ copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                            font=FONT_STYLE)
 copyright_label.pack()
 
-
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
 battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR,
@@ -166,7 +170,7 @@ analysis_label = tk.Label(root, text="Analysis:", font=FONT_STYLE, bg=BG_COLOR,
                           fg=LABEL_COLOR)
 analysis_label.pack()  # Span the label across all columns with padding
 
-crop_health_label = tk.Label(root, text="", font=("Helvetica", 12))
+crop_health_label = tk.Label(root, text="")
 crop_health_label.pack()
 
 
@@ -174,21 +178,24 @@ crop_health_label.pack()
 def update_video():
     global ndvi_mode
     ndvi_mode = False
-    while True:
-        frame = drone.get_frame_read().frame
-        out = cv2.VideoWriter('output_video.avi', fourcc, 20.0, (frame.shape[1], frame.shape[0]))
-        # Process the frame
-        processed_frame = process_frame(frame)
-        img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-        img = Image.fromarray(img)
-        img = ImageTk.PhotoImage(image=img)
-        out.write(processed_frame)
-        # Update the label with the new frame
-        video_label.img = img
-        video_label.config(image=img)
-        root.after(3, update_video)
-        out.release()
-        cv2.destroyAllWindows()
+    frame = drone.get_frame_read().frame
+
+    # Process the frame using your custom processing function
+    processed_frame = process_frame(frame)
+    out = cv2.VideoWriter('output_video.avi', fourcc, 20.0, (frame.shape[1], frame.shape[0]))
+
+    # Convert the processed frame to Tkinter-compatible format
+    img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(img)
+    img = ImageTk.PhotoImage(image=img)
+    out.write(processed_frame)
+    # Update the label with the new frame
+    video_label.img = img
+    video_label.config(image=img)
+
+    # Schedule the function to run again after a delay (e.g., 30 milliseconds)
+    root.after(30, update_video)
+    out.release()
 
 
 def identify_pests_or_diseases(image):
@@ -325,7 +332,6 @@ def capture_and_analyze():
         cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
     except Exception as E:
         print(f"Error in capture_and_analyze: {E}")
         messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
