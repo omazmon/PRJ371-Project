@@ -6,7 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="a490f306-ae76-4334-8192-3bb39f2e41b3" name="Changes" comment="Updates">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AgriDroneProject/GUI/Application.py" beforeDir="false" afterPath="$PROJECT_DIR$/AgriDroneProject/GUI/Application.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AgriDroneProject/GUI/Assesment.py" beforeDir="false" afterPath="$PROJECT_DIR$/AgriDroneProject/GUI/Assesment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AgriDroneProject/GUI/Login.py" beforeDir="false" afterPath="$PROJECT_DIR$/AgriDroneProject/GUI/Login.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AgriDroneProject/GUI/output_video.avi" beforeDir="false" afterPath="$PROJECT_DIR$/AgriDroneProject/GUI/output_video.avi" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -150,17 +153,17 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/AgriDroneProject/GUI/Application.py</url>
-          <line>27</line>
+          <line>37</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/AgriDroneProject/GUI/Application.py</url>
-          <line>76</line>
+          <line>86</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/AgriDroneProject/GUI/Assesment.py</url>
-          <line>311</line>
+          <line>337</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>

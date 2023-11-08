@@ -10,12 +10,16 @@ from PIL import Image, ImageTk
 from djitellopy import Tello
 from future.moves.tkinter import messagebox
 import datetime
+import webbrowser
 
 # Load the pre-trained pest detection mode
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
 # Define the codec and create a VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
+# Replace with your own Power BI report URL and embed token
+report_url = "https://app.powerbi.com/groups/me/reports/5d657c9d-0c5f-45d1-866c-f5fcfa233402/ReportSection?experience=power-bi"
 
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
@@ -29,6 +33,7 @@ ndvi_mode = False
 # Initialize the Haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
+
 def create_report(crop_health):
     try:
         timestamp = datetime.datetime.now()
@@ -37,9 +42,10 @@ def create_report(crop_health):
         # Insert the report into the database
         cursor.execute("INSERT INTO Crops (report_text) VALUES (?)", (report,))
         conn.commit()
-
+        # Open the Power BI report in a new window or tab
+        webbrowser.open(report_url)
         # Update the Tkinter label with the crop health information
-        crop_health_label.config(text=f"Crop Health: {crop_health}")
+        video_label.config(text=f"Crop Health: {crop_health}")
     except Exception as e:
         print(f"Error in create_report: {e}")
         # Handle the error, e.g., show an error message in Tkinter messagebox
@@ -149,30 +155,29 @@ root.bind("<KeyPress>", on_key_press)
 root.bind("<KeyRelease>", on_key_release)
 root.title("Agri~Drone")
 
-BG_COLOR = "#C0C0C0"  # Light gray background
-LABEL_COLOR = "#333333"  # Dark gray label text
-BUTTON_COLOR = "#4CAF50"  # Green button color
-TEXT_COLOR = "#000000"  # Black text color
-FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
-
+LABEL_COLOR = "#333333"
+BUTTON_COLOR = "#D2B48C"
+BG_COLOR = "#D2B48C"
+FONT_STYLE = ("Arial ", 16)
+TEXT_COLOR = "#000000"
+root.config(bg=BG_COLOR)
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=FONT_STYLE)
-copyright_label.pack()
+
 
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
+
 battery_label = tk.Label(root, text=f"Battery level: {drone.get_battery()}%", font=FONT_STYLE, bg=BG_COLOR,
                          fg=LABEL_COLOR)
 battery_label.pack()
 # Create a label for the analysis
-analysis_label = tk.Label(root, text="Analysis:", font=FONT_STYLE, bg=BG_COLOR,
+analysis_label = tk.Label(root, text="Analysis.", font=FONT_STYLE, bg=BG_COLOR,
                           fg=LABEL_COLOR)
 analysis_label.pack()  # Span the label across all columns with padding
 
-crop_health_label = tk.Label(root, text="")
-crop_health_label.pack()
-
+# Create a label for displaying the video feed
+video_label = tk.Label(root)
+video_label.pack()
 
 # Function to update video until connection is established
 def update_video():
@@ -184,7 +189,8 @@ def update_video():
     processed_frame = process_frame(frame)
     out = cv2.VideoWriter('output_video.avi', fourcc, 20.0, (frame.shape[1], frame.shape[0]))
 
-    # Convert the processed frame to Tkinter-compatible format
+    processed_frame = cv2.resize(processed_frame, (1250, 550))
+
     img = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img)
     img = ImageTk.PhotoImage(image=img)
@@ -197,6 +203,26 @@ def update_video():
     root.after(30, update_video)
     out.release()
 
+def capture_and_save_image():
+    try:
+        # Capture a frame from the drone's camera
+        frame = drone.get_frame_read().frame
+
+        # Generate a unique filename for the captured image (you may use timestamps or other methods)
+        image_filename = f"captured_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.jpg"
+
+        # Save the captured image to the specified directory
+        image_path = os.path.join(captured_images_directory, image_filename)
+        cv2.imwrite(image_path, frame)
+
+        # Insert image information into the database
+        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("captured_image", image_path))
+        conn.commit()
+
+        print(f"Image captured and saved as {image_filename}")
+    except Exception as e:
+        print(f"Error capturing and saving image: {e}")
+        tk.messagebox.showerror("Error", f"Error capturing and saving image: {e}")
 
 def identify_pests_or_diseases(image):
     green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
@@ -446,24 +472,6 @@ def check_battery_periodically():
         time.sleep(2)
 
 
-# Function to analyze crop growth
-def analyze_crop_growth(previous_image_path, current_image_path):
-    # Load previous and current images
-    previous_image = cv2.imread(previous_image_path)
-    current_image = cv2.imread(current_image_path)
-
-    diff_image = cv2.absdiff(previous_image, current_image)
-
-    # Count non-zero pixels (changed pixels) to calculate growth area
-    changed_pixel_count = np.count_nonzero(diff_image)
-
-    # Calculate growth percentage based on changed pixel count
-    total_pixels = 2 * 1  # Assuming a fixed area for demonstration
-    growth_percentage = (changed_pixel_count / total_pixels) * 100
-
-    return growth_percentage
-
-
 # Function to calculate crop area
 def calculate_crop_area(image):
     # Implement logic to calculate crop area based on image processing
@@ -477,11 +485,6 @@ def calculate_crop_area(image):
 
     return total_area
 
-
-# buttons_frame = tk.Frame(root)
-# buttons_frame.pack(side=tk.LEFT, fill=tk.X)# Create a panel to hold the buttons
-button_panel = tk.Frame(root, bg=BG_COLOR)
-button_panel.pack(side=tk.LEFT, padx=10, pady=10)
 
 # Create a button to trigger the video stream
 video_button = tk.Button(root, text="View stream 4 object detection", command=update_video, font=FONT_STYLE,
@@ -501,17 +504,15 @@ analyze_button = tk.Button(root, text="Analyze Crops and Pests", command=capture
 analyze_button.pack(side=tk.LEFT, padx=5)
 
 # Create a button for the report
-report_button = tk.Button(root, text="Generate Report", command=create_report, font=FONT_STYLE,
+report_button = tk.Button(root, text="Generate Report", command=create_report,
+                          font=FONT_STYLE,
                           bg=BG_COLOR,
                           fg=LABEL_COLOR)  # User feedback
 report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
+# Create a button for capturing an image
+capture_image_button = tk.Button(root, text="Capture Image", command=capture_and_save_image, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
+capture_image_button.pack(side=tk.LEFT, padx=5)
 
-logout_button = tk.Button(root, text="LogOut", command=close_application)
-logout_button.pack(side=tk.BOTTOM, padx=5)
-
-# Create a label for displaying the video feed
-video_label = tk.Label(root)
-video_label.pack()
 
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)

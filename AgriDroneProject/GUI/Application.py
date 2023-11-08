@@ -5,15 +5,25 @@ from datetime import datetime
 from tkinter import ttk, messagebox
 import pyodbc
 import requests
+import webbrowser
+from PIL import Image, ImageTk
 
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Agri~Drone")
-BG_COLOR = "#C0C0C0"  # Light gray background
-LABEL_COLOR = "#333333"  # Dark gray label text
-BUTTON_COLOR = "#4CAF50"  # Green button color
-TEXT_COLOR = "#000000"  # Black text color
-FONT_STYLE = ("Times New Roman", 14, "bold italic")  # Font style
+LABEL_COLOR = "#333333"
+BUTTON_COLOR = "#D2B48C"
+BG_COLOR = "#D2B48C"
+FONT_STYLE = ("Arial ", 16)
+TEXT_COLOR = "#000000"
+# Replace with your own Power BI report URL and embed token
+report_url = "https://app.powerbi.com/groups/me/reports/5d657c9d-0c5f-45d1-866c-f5fcfa233402/ReportSection?experience=power-bi"
+ico_image1 = Image.open("drone_icon_191447.ico")
+photo = ImageTk.PhotoImage(ico_image1)
+ico_image2 = Image.open("data_icon_154537.ico")
+photo1 = ImageTk.PhotoImage(ico_image2)
+ico_image3 = Image.open("Weather_31085.ico")
+photo2 = ImageTk.PhotoImage(ico_image3)
 warning_message = """
 Please Note:
 - Enter accurate data for the most optimal assessment.
@@ -116,6 +126,8 @@ def open_dronedata():
             else:
                 crop_assessment_button.config(
                     state="normal")  # Enable the button if it's not raining and wind speed is safe
+                messagebox.showwarning("Drone Connection",
+                                       "Please Change your wifi connection! Connect to Drone Wifi e.g.'Tello-ABC123' ")
                 return f"Temperature: {temperature}°C, Humidity: {humidity}%, Wind Speed: {wind_speed} m/s\nThe drone is safe to operate."
         else:
             return "Failed to fetch weather data"
@@ -139,6 +151,11 @@ def close_application():
     subprocess.Popen(["python", "Assesment.py"])
     time.sleep(5)
     root.destroy()
+
+
+def open_powerbi():
+    # Open the Power BI report in a new window or tab
+    webbrowser.open(report_url)
 
 
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
@@ -169,21 +186,25 @@ crop_combobox.set("Select Crop Type")
 crop_label.pack()
 crop_combobox.pack(padx=10)
 
-# Create a button to fetch and display weather forecast
-weather_button = tk.Button(root, text="Check Weather Forecast", command=display_weather_forecast, background="#A9A9A9",
-                           font=FONT_STYLE)
-weather_button.pack(pady=5, padx=20)
-
-crop_assessment_button = tk.Button(root, text="Start Drone", command=close_application, state="disabled",
-                                   background=BUTTON_COLOR, font=FONT_STYLE)
-crop_assessment_button.pack(pady=5, padx=20)
-
-logout_button = tk.Button(root, text="LogOut", command=root.destroy, background="#FF0000", font=FONT_STYLE)
+logout_button = tk.Button(root, text="LogOut", command=root.destroy, background="#D3D3D3", font=FONT_STYLE)
 logout_button.pack(pady=5, padx=20)
 
 copyright_label = ttk.Label(root, text="Copyright Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"), background=BG_COLOR, foreground=TEXT_COLOR)
 copyright_label.pack()
+# Create a button to fetch and display weather forecast
+weather_button = tk.Button(root, image=photo2, text="Check Weather Forecast", command=display_weather_forecast,
+                           background="#D2B48C",
+                           font=FONT_STYLE)
+weather_button.pack(side=tk.LEFT, pady=5, padx=20)
+
+data_button = tk.Button(root, image=photo1, text="Data Insights", command=open_powerbi, background="#D2B48C",
+                        font=FONT_STYLE)
+data_button.pack(side=tk.LEFT, pady=5, padx=20)
+
+crop_assessment_button = tk.Button(root, image=photo, text="Start Drone", command=close_application, state="disabled",
+                                   background=BUTTON_COLOR, font=FONT_STYLE)
+crop_assessment_button.pack(side=tk.LEFT, pady=5, padx=20)
 
 # Start the GUI main loop
 update_date_time()
