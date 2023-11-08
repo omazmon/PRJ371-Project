@@ -10,17 +10,11 @@ from PIL import Image, ImageTk
 from djitellopy import Tello
 from future.moves.tkinter import messagebox
 import datetime
-import webbrowser
 
-# Load the pre-trained pest detection mode
 captured_images_directory = "captured_images"
 os.makedirs(captured_images_directory, exist_ok=True)
 # Define the codec and create a VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-
-# Replace with your own Power BI report URL and embed token
-report_url = "https://app.powerbi.com/groups/me/reports/5d657c9d-0c5f-45d1-866c-f5fcfa233402/ReportSection?experience=power-bi"
-
 conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 conn = pyodbc.connect(conn_str)
 cursor = conn.cursor()
@@ -34,21 +28,29 @@ ndvi_mode = False
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 
-def create_report(crop_health):
+def create_report():
     try:
         timestamp = datetime.datetime.now()
-        report = f'Report generated on {timestamp}:\nCrop Health: {crop_health}\n'
+        crop_health = analysis_label.cget("text")  # Get the crop health information from the label
 
-        # Insert the report into the database
-        cursor.execute("INSERT INTO Crops (report_text) VALUES (?)", (report,))
-        conn.commit()
-        # Open the Power BI report in a new window or tab
-        webbrowser.open(report_url)
-        # Update the Tkinter label with the crop health information
-        video_label.config(text=f"Crop Health: {crop_health}")
+        # Generate the content of the report
+        report_content = f'Report generated on {timestamp}:\nCrop Health: {crop_health}\n'
+
+        # Define the report file path
+        report_file_path = "crop_health_report.txt"
+
+        # Write the report content to a text file
+        with open(report_file_path, "w") as report_file:
+            report_file.write(report_content)
+
+        # Show a success message to the user
+        tk.messagebox.showinfo("Report Generated", "The report has been successfully generated.")
+
+        # Open the report file in the default text editor (you can replace this with a specific application)
+        os.system(f"notepad.exe {report_file_path}")
+
     except Exception as e:
         print(f"Error in create_report: {e}")
-        # Handle the error, e.g., show an error message in Tkinter messagebox
         tk.messagebox.showerror("Error", f"Error in create_report: {e}")
 
 
@@ -163,7 +165,6 @@ TEXT_COLOR = "#000000"
 root.config(bg=BG_COLOR)
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
-
 buttons_frame = tk.Frame(root)  # Create a frame to hold the buttons
 buttons_frame.pack(side=tk.TOP, fill=tk.X)
 
@@ -178,6 +179,7 @@ analysis_label.pack()  # Span the label across all columns with padding
 # Create a label for displaying the video feed
 video_label = tk.Label(root)
 video_label.pack()
+
 
 # Function to update video until connection is established
 def update_video():
@@ -203,6 +205,7 @@ def update_video():
     root.after(30, update_video)
     out.release()
 
+
 def capture_and_save_image():
     try:
         # Capture a frame from the drone's camera
@@ -223,6 +226,7 @@ def capture_and_save_image():
     except Exception as e:
         print(f"Error capturing and saving image: {e}")
         tk.messagebox.showerror("Error", f"Error capturing and saving image: {e}")
+
 
 def identify_pests_or_diseases(image):
     green_channel = image[:, :, 1]  # Assuming green is the 2nd channel in the image
@@ -319,48 +323,22 @@ def analyze_crop_health(ndvi_map):
 def capture_and_analyze():
     try:
         frame = drone.get_frame_read().frame
-        ndvi_value = calculate_and_visualize_ndvi(frame)
-        crop_health = analyze_crop_health(ndvi_value)
-        pests_or_diseases_result = identify_pests_or_diseases(frame)
+
+        # Optimize image processing here
+        processed_frame, detected_crops = process_crops(frame)
+
+        # Analyze the detected crops
+        crop_health = analyze_crop_health(detected_crops)
 
         # Create a PDF report with crop health and pest detection results
-        pdf_file_path = os.path.join(captured_images_directory, "report.pdf")
-        with open(pdf_file_path, 'w') as file:
-            file.write(f'Crop Health Report\n')
-            file.write(f'NDVI Value: {ndvi_value}\n')
-            file.write(f'Crop Health: {crop_health}\n')
-            file.write(f'Pests or Diseases: {pests_or_diseases_result}\n')
+        create_report(crop_health)
 
-        # Save the original frame, NDVI image, and pests or diseases detection result
-        original_image_path = os.path.join(captured_images_directory, "original_frame.jpg")
-        ndvi_image_path = os.path.join(captured_images_directory, "ndvi_map.jpg")
-        pests_or_diseases_path = os.path.join(captured_images_directory, "pests_or_diseases_result.jpg")
+        # Update the Tkinter label with the crop health information
+        analysis_label.config(text=f"Crop Health: {crop_health}")
 
-        cv2.imwrite(original_image_path, frame)
-        cv2.imwrite(ndvi_image_path, ndvi_value)
-        cv2.imwrite(pests_or_diseases_path, pests_or_diseases_result * 255)
-
-        # Insert image paths into the 'images' table (assuming you have a table named 'images' in the database)
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("original", original_image_path))
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)", ("ndvi", ndvi_image_path))
-        cursor.execute("INSERT INTO images (image_type, image_path) VALUES (?, ?)",
-                       ("pests_or_diseases", pests_or_diseases_path))
-        conn.commit()
-
-        # Display the PDF report content to the user (optional)
-        with open(pdf_file_path, 'r') as file:
-            report_content = file.read()
-            print(report_content)  # Print the report content to the console (you can display it in Tkinter labels)
-
-        # Display images (optional)
-        cv2.imshow("Original Image", frame)
-        cv2.imshow("NDVI", ndvi_value)
-        cv2.imshow("Pests or Diseases", pests_or_diseases_result * 255)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-    except Exception as E:
-        print(f"Error in capture_and_analyze: {E}")
-        messagebox.showerror("Error", f"Error in capture_and_analyze: {E}")
+    except Exception as e:
+        print(f"Error in capture_and_analyze: {e}")
+        messagebox.showerror("Error", f"Error in capture_and_analyze: {e}")
 
 
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
@@ -460,7 +438,6 @@ def check_battery():
     # Low battery warning
     if battery_level < 20:
         battery_label.config(text="Low Battery Warning! Returning to Base.")
-        # Automatic return to base
         drone.land()
         time.sleep(2)
 
@@ -484,6 +461,39 @@ def calculate_crop_area(image):
         total_area += cv2.contourArea(contour)
 
     return total_area
+
+
+def process_analyze_report():
+    try:
+        # Analyze the crop health and detect pests (replace this with your actual analysis logic)
+        frame = drone.get_frame_read().frame
+        crop_health, pests_detected = process_frame(frame)
+
+        # Generate the content of the report
+        timestamp = datetime.datetime.now()
+        report_content = f'Report generated on {timestamp}:\nCrop Health: {crop_health}\nPests Detected: {pests_detected}\n'
+
+        # Insert the report into the database
+        cursor.execute("INSERT INTO AnalysisReports (report_text) VALUES (?)", (report_content,))
+        conn.commit()
+
+        # Define the report file path
+        report_file_path = "crop_health_report.txt"
+
+        # Write the report content to a text file
+        with open(report_file_path, "w") as report_file:
+            report_file.write(report_content)
+
+        # Show a success message to the user
+        tk.messagebox.showinfo("Report Generated",
+                               "The report has been successfully generated and saved to the database.")
+
+        # Open the report file in the default text editor (you can replace this with a specific application)
+        os.system(f"notepad.exe {report_file_path}")
+
+    except Exception as e:
+        print(f"Error in process_analyze_report: {e}")
+        tk.messagebox.showerror("Error", f"Error in process_analyze_report: {e}")
 
 
 # Create a button to trigger the video stream
@@ -510,9 +520,13 @@ report_button = tk.Button(root, text="Generate Report", command=create_report,
                           fg=LABEL_COLOR)  # User feedback
 report_button.pack(side=tk.LEFT, padx=5)  # Place the button at row 0, column 3 with padding
 # Create a button for capturing an image
-capture_image_button = tk.Button(root, text="Capture Image", command=capture_and_save_image, font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
+capture_image_button = tk.Button(root, text="Capture Image", command=capture_and_save_image, font=FONT_STYLE,
+                                 bg=BG_COLOR, fg=LABEL_COLOR)
 capture_image_button.pack(side=tk.LEFT, padx=5)
 
+analyze_report_button = tk.Button(root, text="Analyze and Generate Report", command=process_analyze_report,
+                                  font=FONT_STYLE, bg=BG_COLOR, fg=LABEL_COLOR)
+analyze_report_button.pack(side=tk.LEFT, padx=5)
 
 # Create threads for controlling the drone and updating the video
 video_thread = threading.Thread(target=update_video_thread)

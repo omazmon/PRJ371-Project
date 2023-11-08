@@ -9,8 +9,8 @@ root = tk.Tk()
 root.title("Agri~Drone")
 
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#D2B48C"
-BG_COLOR = "#D2B48C"
+BUTTON_COLOR = "#D3D3D3"
+BG_COLOR = "#90EE90"
 FONT_STYLE = ("Arial ", 16)
 TEXT_COLOR = "#000000"
 
@@ -74,9 +74,9 @@ label_password.pack(pady=10)
 entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
 entry_password.pack(pady=10, padx=20)
 
-login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
+login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR)
 login_button.pack(pady=20)
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023", bg=BG_COLOR,
+copyright_label = tk.Label(root, text="Copyright Reserved @ Agri~Drone 2023", bg=BG_COLOR,
                            font=("Times New Roman", 12, "bold italic"))
 copyright_label.pack()
 root.mainloop()

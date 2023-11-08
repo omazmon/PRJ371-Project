@@ -12,8 +12,8 @@ from PIL import Image, ImageTk
 root = tk.Tk()
 root.title("Agri~Drone")
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#D2B48C"
-BG_COLOR = "#D2B48C"
+BUTTON_COLOR = "#90EE90"
+BG_COLOR = "#90EE90"
 FONT_STYLE = ("Arial ", 16)
 TEXT_COLOR = "#000000"
 # Replace with your own Power BI report URL and embed token
@@ -186,25 +186,24 @@ crop_combobox.set("Select Crop Type")
 crop_label.pack()
 crop_combobox.pack(padx=10)
 
-logout_button = tk.Button(root, text="LogOut", command=root.destroy, background="#D3D3D3", font=FONT_STYLE)
-logout_button.pack(pady=5, padx=20)
 
 copyright_label = ttk.Label(root, text="Copyright Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"), background=BG_COLOR, foreground=TEXT_COLOR)
 copyright_label.pack()
 # Create a button to fetch and display weather forecast
 weather_button = tk.Button(root, image=photo2, text="Check Weather Forecast", command=display_weather_forecast,
-                           background="#D2B48C",
+                           background="#90EE90",
                            font=FONT_STYLE)
 weather_button.pack(side=tk.LEFT, pady=5, padx=20)
 
-data_button = tk.Button(root, image=photo1, text="Data Insights", command=open_powerbi, background="#D2B48C",
+data_button = tk.Button(root, image=photo1, text="Data Insights", command=open_powerbi, background="#90EE90",
                         font=FONT_STYLE)
 data_button.pack(side=tk.LEFT, pady=5, padx=20)
 
 crop_assessment_button = tk.Button(root, image=photo, text="Start Drone", command=close_application, state="disabled",
                                    background=BUTTON_COLOR, font=FONT_STYLE)
 crop_assessment_button.pack(side=tk.LEFT, pady=5, padx=20)
+
 
 # Start the GUI main loop
 update_date_time()
