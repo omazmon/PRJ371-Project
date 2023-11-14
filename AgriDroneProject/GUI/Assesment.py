@@ -61,13 +61,13 @@ def drone_control_thread():
 
 
 # Function to update video until connection is established
-def update_video_thread():
-    while True:
-        if ndvi_mode:
-            start_ndvi_stream()
-        else:
-            update_video()
-        time.sleep(0.1)
+# def update_video_thread():
+#     while True:
+#         if ndvi_mode:
+#             start_ndvi_stream()
+#         else:
+#             update_video()
+#         time.sleep(0.1)
 
 
 # Function to receive and process NDVI map image
@@ -156,12 +156,12 @@ root = tk.Tk()
 root.bind("<KeyPress>", on_key_press)
 root.bind("<KeyRelease>", on_key_release)
 root.title("Agri~Drone")
-
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#D2B48C"
-BG_COLOR = "#D2B48C"
-FONT_STYLE = ("Arial ", 16)
+BUTTON_COLOR = "#4CAF50"  # Green color
+BG_COLOR = "#FFFFFF"
 TEXT_COLOR = "#000000"
+FONT_STYLE = ("Arial ", 16)
+
 root.config(bg=BG_COLOR)
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
 
@@ -235,6 +235,14 @@ def identify_pests_or_diseases(image):
     return pests_detected
 
 
+# Function to update video until connection is established
+def update_video_thread():
+    if not ndvi_mode:
+        update_video()
+    root.after(100, update_video_thread)
+
+
+# Function to start NDVI stream
 def start_ndvi_stream():
     global ndvi_mode
     ndvi_mode = True
@@ -255,9 +263,34 @@ def start_ndvi_stream():
 
     ndvi_thread = threading.Thread(target=update_ndvi_video)
     ndvi_thread.start()
+
     # Start updating the video with NDVI frames
     update_ndvi_video()
 
+#
+# def start_ndvi_stream():
+#     global ndvi_mode
+#     ndvi_mode = True
+#
+#     # Function to update video with NDVI frames
+#     def update_ndvi_video():
+#         if ndvi_mode:
+#             frame = drone.get_frame_read().frame
+#             processed_frame = process_frame(frame)
+#
+#             # Calculate and visualize NDVI
+#             ndvi_image = calculate_and_visualize_ndvi(processed_frame)
+#
+#             # Update the label with the new NDVI image
+#             video_label.img = ndvi_image
+#             video_label.config(image=ndvi_image)
+#             root.after(60, update_ndvi_video)
+#
+#     ndvi_thread = threading.Thread(target=update_ndvi_video)
+#     ndvi_thread.start()
+#     # Start updating the video with NDVI frames
+#     update_ndvi_video()
+#
 
 def get_soil_type(color):
     soil_colors = {
@@ -532,10 +565,9 @@ analyze_report_button.pack(side=tk.LEFT, padx=5)
 video_thread = threading.Thread(target=update_video_thread)
 drone_thread = threading.Thread(target=drone_control_thread)
 battery_thread = threading.Thread(target=check_battery_periodically)
-# Start the tkinter main loop (window will open here)
-
-root.mainloop()
 
 video_thread.start()
 drone_thread.start()
 battery_thread.start()
+# Start the tkinter main loop (window will open here)
+root.mainloop()

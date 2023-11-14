@@ -9,10 +9,10 @@ root = tk.Tk()
 root.title("Agri~Drone")
 
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#D3D3D3"
-BG_COLOR = "#90EE90"
-FONT_STYLE = ("Arial ", 16)
+BUTTON_COLOR = "#4CAF50"  # Green color
+BG_COLOR = "#FFFFFF"
 TEXT_COLOR = "#000000"
+FONT_STYLE = ("Arial ", 16)
 
 # Load the background image
 background_image = Image.open("OIP.jpg")
@@ -64,19 +64,22 @@ def login():
 
 label_Welcome = tk.Label(root, text="Login", font=FONT_STYLE,  background=BG_COLOR, foreground=TEXT_COLOR)
 label_Welcome.pack(pady=10)
+
 label_username = tk.Label(root, text="Username:", fg=LABEL_COLOR, background=BG_COLOR, foreground=TEXT_COLOR)
-label_username.pack(pady=10)
-entry_username = tk.Entry(root)
-entry_username.pack(pady=10, padx=20)
+label_username.pack(pady=(20, 5), padx=20)
 
-label_password = tk.Label(root, text="Password:", fg=LABEL_COLOR,  background=BG_COLOR, foreground=TEXT_COLOR)
-label_password.pack(pady=10)
-entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
-entry_password.pack(pady=10, padx=20)
+entry_username = tk.Entry(root, font=FONT_STYLE)
+entry_username.pack(pady=5, padx=20)
 
-login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR)
-login_button.pack( pady=5, padx=20)
+label_password = tk.Label(root, text="Password:", fg=LABEL_COLOR, background=BG_COLOR, foreground=TEXT_COLOR)
+label_password.pack(pady=5, padx=20)
 
+entry_password = tk.Entry(root, show="*", font=FONT_STYLE)  # Mask the password with asterisks
+entry_password.pack(pady=5, padx=20)
+
+# Improve button styling
+login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, font=FONT_STYLE, fg=TEXT_COLOR)
+login_button.pack(pady=20, padx=20)
 root.mainloop()
 # def login():
 #     username = entry_username.get()

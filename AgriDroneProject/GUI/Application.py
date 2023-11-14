@@ -12,10 +12,11 @@ from PIL import Image, ImageTk
 root = tk.Tk()
 root.title("Agri~Drone")
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#90EE90"
+BUTTON_COLOR = "#4CAF50"  # Green color
 BG_COLOR = "#90EE90"
-FONT_STYLE = ("Arial ", 16)
 TEXT_COLOR = "#000000"
+FONT_STYLE = ("Arial ", 16)
+
 # Replace with your own Power BI report URL and embed token
 report_url = "https://app.powerbi.com/groups/me/reports/5d657c9d-0c5f-45d1-866c-f5fcfa233402/ReportSection?experience=power-bi"
 ico_image1 = Image.open("drone_icon_191447.ico")
@@ -30,7 +31,7 @@ Please Note:
 - Use the application responsibly and follow ethical guidelines.
 """
 # Set the window size to fullscreen
-root.geometry("450x400")
+root.geometry("720x400")
 root.config(bg=BG_COLOR)
 
 # Create a connection to the database
