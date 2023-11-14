@@ -186,10 +186,6 @@ crop_combobox.set("Select Crop Type")
 crop_label.pack()
 crop_combobox.pack(padx=10)
 
-
-copyright_label = ttk.Label(root, text="Copyright Reserved @ Agri~Drone 2023",
-                            font=("Times New Roman", 14, "bold italic"), background=BG_COLOR, foreground=TEXT_COLOR)
-copyright_label.pack()
 # Create a button to fetch and display weather forecast
 weather_button = tk.Button(root, image=photo2, text="Check Weather Forecast", command=display_weather_forecast,
                            background="#90EE90",
@@ -203,7 +199,9 @@ data_button.pack(side=tk.LEFT, pady=5, padx=20)
 crop_assessment_button = tk.Button(root, image=photo, text="Start Drone", command=close_application, state="disabled",
                                    background=BUTTON_COLOR, font=FONT_STYLE)
 crop_assessment_button.pack(side=tk.LEFT, pady=5, padx=20)
-
+copyright_label = tk.Label(root, text="Copyright Reserved @ Agri~Drone 2023", bg=BG_COLOR,
+                           font=("Times New Roman", 12, "bold italic"))
+copyright_label.pack(side=tk.BOTTOM)
 
 # Start the GUI main loop
 update_date_time()

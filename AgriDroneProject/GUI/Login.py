@@ -75,10 +75,8 @@ entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
 entry_password.pack(pady=10, padx=20)
 
 login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR)
-login_button.pack(pady=20)
-copyright_label = tk.Label(root, text="Copyright Reserved @ Agri~Drone 2023", bg=BG_COLOR,
-                           font=("Times New Roman", 12, "bold italic"))
-copyright_label.pack()
+login_button.pack( pady=5, padx=20)
+
 root.mainloop()
 # def login():
 #     username = entry_username.get()
