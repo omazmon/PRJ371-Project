@@ -5,9 +5,9 @@ app = Flask(__name__)
 
 # External weather API endpoint (example: OpenWeatherMap API)
 WEATHER_API_URL = "https://api.openweathermap.org/data/2.5/"
-WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"  #
+WEATHER_API_KEY = "06e1969da55a4b51d0b4447dcd9c92eb"  
 
-# Example crops database (you can replace it with your own data or database)
+
 crops_data = {
     "wheat": {
         "temperature_range": [15, 25],  # Celsius
