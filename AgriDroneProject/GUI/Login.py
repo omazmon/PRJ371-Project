@@ -8,15 +8,18 @@ from PIL import Image, ImageTk
 root = tk.Tk()
 root.title("Agri~Drone")
 
-# Set a consistent color scheme
-BG_COLOR = "#C0C0C0"
 LABEL_COLOR = "#333333"
-BUTTON_COLOR = "#4CAF50"
+BUTTON_COLOR = "#4CAF50"  # Green color
+BG_COLOR = "#FFFFFF"
+TEXT_COLOR = "#000000"
+FONT_STYLE = ("Arial ", 16)
+
 # Load the background image
-background_image = Image.open("background-image.jpg")
+background_image = Image.open("OIP.jpg")
 background_photo = ImageTk.PhotoImage(background_image)
-# Set the window size to a fixed size for better appearance
-root.geometry("400x300")
+
+# Set the window size to match the background image size
+root.geometry(f"{background_image.width}x{background_image.height}")
 
 
 # Function to open the Application.py
@@ -28,6 +31,10 @@ valid_credentials = {
     "technician": {"username": "admin", "password": bcrypt.hashpw("1234".encode('utf-8'), bcrypt.gensalt())},
     "farmer": {"username": "farmer", "password": bcrypt.hashpw("@1234@".encode('utf-8'), bcrypt.gensalt())}
 }
+
+# Create a label to display the background image
+background_label = tk.Label(root, image=background_photo)
+background_label.place(relwidth=1, relheight=1)
 
 
 # Function to validate credentials
@@ -55,21 +62,45 @@ def login():
         messagebox.showerror("Error", "Invalid credentials. Please try again.")
 
 
-label_Welcome = tk.Label(root, text="Login", font=("Times New Roman", 20, "bold italic"))
+label_Welcome = tk.Label(root, text="Login", font=FONT_STYLE,  background=BG_COLOR, foreground=TEXT_COLOR)
 label_Welcome.pack(pady=10)
-label_username = tk.Label(root, text="Username:", bg=BG_COLOR, fg=LABEL_COLOR)
-label_username.pack(pady=10)
-entry_username = tk.Entry(root)
-entry_username.pack(pady=10, padx=20)
 
-label_password = tk.Label(root, text="Password:", bg=BG_COLOR, fg=LABEL_COLOR)
-label_password.pack(pady=10)
-entry_password = tk.Entry(root, show="*")  # Mask the password with asterisks
-entry_password.pack(pady=10, padx=20)
+label_username = tk.Label(root, text="Username:", fg=LABEL_COLOR, background=BG_COLOR, foreground=TEXT_COLOR)
+label_username.pack(pady=(20, 5), padx=20)
 
-login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, fg="white")
-login_button.pack(pady=20)
-copyright_label = tk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
-                           font=("Times New Roman", 14, "bold italic"))
-copyright_label.pack()
+entry_username = tk.Entry(root, font=FONT_STYLE)
+entry_username.pack(pady=5, padx=20)
+
+label_password = tk.Label(root, text="Password:", fg=LABEL_COLOR, background=BG_COLOR, foreground=TEXT_COLOR)
+label_password.pack(pady=5, padx=20)
+
+entry_password = tk.Entry(root, show="*", font=FONT_STYLE)  # Mask the password with asterisks
+entry_password.pack(pady=5, padx=20)
+
+# Improve button styling
+login_button = tk.Button(root, text="Login", command=login, bg=BUTTON_COLOR, font=FONT_STYLE, fg=TEXT_COLOR)
+login_button.pack(pady=20, padx=20)
 root.mainloop()
+# def login():
+#     username = entry_username.get()
+#     password = entry_password.get()
+#
+#     try:
+#         # Authenticate user against the database
+#         cursor.execute('SELECT Password, Role FROM Users WHERE Username=?', (username,))
+#         row = cursor.fetchone()
+#         if row:
+#             stored_password, role = row
+#             if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+#                 messagebox.showinfo("Success", f"Welcome, {username.capitalize()}!")
+#                 open_application()
+#                 time.sleep(3)
+#                 root.destroy()
+#             else:
+#                 messagebox.showerror("Error", "Invalid credentials. Please try again.")
+#         else:
+#             messagebox.showerror("Error", "User not found.")
+#     except pyodbc.Error as e:
+#         print(f"Database error: {e}")
+#         messagebox.showerror("Error", "An error occurred while accessing the database.")
+#
