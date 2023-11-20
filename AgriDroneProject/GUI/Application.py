@@ -1,8 +1,6 @@
 import subprocess
 import tkinter as tk
 from tkinter import ttk, messagebox
-from tkinter import PhotoImage
-from PIL import Image, ImageTk
 import pyodbc
 import requests
 
@@ -12,26 +10,9 @@ root.title("Agri~Drone")
 
 # Set the window size to fullscreen
 root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(), root.winfo_screenheight()))
-root.configure(bg="#008080")  # Use the color code for green
 BUTTON_COLOR = "#4CAF50"
-
-
-
-# Define the button color, font style, and border width
-BUTTON_COLOR = "#4CAF50"  # Darker green
-FONT_STYLE = "Arial 12"
-BUTTON_BORDER_WIDTH = 1
-
-# Load your start icon image
-start_icon = PhotoImage(file="C:/Users/mo/Downloads/play.png")  # Replace with your icon's file path
-start_icon_resized= start_icon.subsample(16,16)
-
-weather_icon= PhotoImage(file="C:/Users/mo/Downloads/cloudy.png")
-weather_icon_resized= weather_icon.subsample(16,16)
 # Create a connection to the database
-conn_str ="DRIVER={SQL Server};SERVER=LAPTOP-CPS3S6O0\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
-
-
+conn_str = "DRIVER={SQL Server};SERVER=Mthokozisi-2\SQLEXPRESS;DATABASE=AgriDrone;Trusted_Connection=yes;"
 
 conn = pyodbc.connect(conn_str)
 cursor = conn.cursor()
@@ -86,43 +67,34 @@ provinces = ["Please select province", "Eastern Cape", "Free State", "Gauteng", 
 # Create a list of top 5 farming crops in South Africa
 top_crops = ["Maize", "Sugarcane", "Wheat", "Sunflower", "Citrus"]
 # Create a welcome label
-welcome_label = tk.Label(root, text="Welcome to AgriDrone", font=("Arial", 18, "bold"), bg="white", bd=1, relief="solid", fg="#008080")
-welcome_label.pack(fill="x")  # Set the label to fill the x-axis
+welcome_label = ttk.Label(root, text="Welcome to AgriDrone", font=("Times New Roman", 14, "bold"))
+welcome_label.pack()
 
 farm_name_label = ttk.Label(root, text="Farm Name:")
 farm_name_label.pack()
-farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly", font=FONT_STYLE)
-farm_name_combobox.pack(padx=30, pady=20)
-farm_name_combobox.set("Select farm name")
-
+farm_name_combobox = ttk.Combobox(root, values=farm_names_list, state="readonly")
+farm_name_combobox.set("Select Farm Name")
+farm_name_combobox.pack()
 # Create a location dropdown (combobox)
 location_label = ttk.Label(root, text="Location")
-location_label.pack()
-location_combobox = ttk.Combobox(root, values=provinces, state="readonly", font=FONT_STYLE)
-location_combobox.pack(padx=30, pady=20)
+location_combobox = ttk.Combobox(root, values=provinces, state="readonly")
 location_combobox.set("Please select province")
-
-
+location_label.pack()
+location_combobox.pack()
 
 # Create a crop type dropdown (combobox)
 crop_label = ttk.Label(root, text="Crop Type")
-crop_combobox = ttk.Combobox(root, values=top_crops, state="readonly", font=FONT_STYLE)
+crop_combobox = ttk.Combobox(root, values=top_crops, state="readonly")
 crop_combobox.set("Select Crop Type")
 crop_label.pack()
-crop_combobox.pack(padx=30, pady=20)
+crop_combobox.pack()
 
-
-crop_assessment_button = tk.Button(root, text="Start Drone", command=close_application, bg=BUTTON_COLOR, font=FONT_STYLE, borderwidth=BUTTON_BORDER_WIDTH,image=start_icon_resized, compound=tk.LEFT)
-crop_assessment_button.pack(pady=20, side="top", anchor="n")
+crop_assessment_button = ttk.Button(root, text="Start Drone", command=close_application)
+crop_assessment_button.pack()
 # Create a button to fetch and display weather forecast
-weather_button = tk.Button(root, text="Check Weather Forecast", command=display_weather_forecast, bg=BUTTON_COLOR, font=FONT_STYLE, borderwidth=BUTTON_BORDER_WIDTH,image=weather_icon_resized, compound=tk.LEFT)
-weather_button.pack(pady=20, side="top", anchor="n")
+weather_button = ttk.Button(root, text="Check Weather Forecast", command=display_weather_forecast)
+weather_button.pack()
 copyright_label = ttk.Label(root, text="Copy Right Reserved @ Agri~Drone 2023",
                             font=("Times New Roman", 14, "bold italic"))
-
-
-
 # Start the GUI main loop
 root.mainloop()
-
-
