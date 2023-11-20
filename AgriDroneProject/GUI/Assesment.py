@@ -114,9 +114,15 @@ def take_off():
 def on_key_press(event):
     key = event.char
 
+main
     if key == '8':
+
+    print(drone.get_battery())
+
+    if key == 'w':
+      main
         drone.send_rc_control(0, 0, 50, 0)  # Move up when
-    elif key == '2':
+    elif key == 's':
         drone.send_rc_control(0, 0, -50, 2)  # Move down when
     elif key == '+':
         drone.flip_forward()
@@ -125,6 +131,7 @@ def on_key_press(event):
     elif key == '4':
         drone.send_rc_control(-75, 0, 0, 0)
     elif key == '6':
+main
         drone.send_rc_control(75, 0, 0, 0)
     elif key == '7':
         drone.send_rc_control(0, 0, 0, -250)  #
@@ -140,6 +147,23 @@ def on_key_press(event):
         drone.send_rc_control(0, 75, 0, 0)
     elif key == '3':
         drone.send_rc_control(0, -75, 0, 0)
+        
+        drone.send_rc_control(0, 75, 0, 0)
+    elif key == '8':
+        drone.send_rc_control(0, 50, 0, 0)
+    elif key == '2':
+        drone.send_rc_control(0, -50, 0, 0)
+    elif key == 'e':
+        drone.send_rc_control(0, 0, 0, -50)  # Rotate counterclockwise when 'q' is pressed
+    elif key == 'q':
+        drone.send_rc_control(0, 0, 0, 50)  # Rotate clockwise when 'w' is pressed
+    elif key == 't':
+        take_off()
+    elif key == '5':
+        drone.send_rc_control(0, 0, 0, 0)  # Stop the drone when a key is released
+    elif key == 'l':
+        drone.land()  # Land when spacebar is pressed
+main
 
 
 # Define color codes and their corresponding transparency values
