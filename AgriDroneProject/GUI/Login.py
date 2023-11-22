@@ -16,7 +16,8 @@ BUTTON_COLOR = "#4CAF50"
 background_image = Image.open("background-image.jpg")
 background_photo = ImageTk.PhotoImage(background_image)
 # Set the window size to a fixed size for better appearance
-root.geometry("400x300")
+root.geometry("400x400")
+
 
 
 # Function to open the Application.py
