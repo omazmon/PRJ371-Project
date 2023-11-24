@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a490f306-ae76-4334-8192-3bb39f2e41b3" name="Changes" comment="Updates">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AgriDroneProject/GUI/Login.py" beforeDir="false" afterPath="$PROJECT_DIR$/AgriDroneProject/GUI/Login.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,7 +133,15 @@
       <option name="project" value="LOCAL" />
       <updated>1700675078138</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Updates">
+      <option name="closed" value="true" />
+      <created>1700744054467</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1700744054467</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
